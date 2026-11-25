@@ -1,0 +1,76 @@
+{
+  "schema": "atelier/survey@1",
+  "project": {
+    "name": "Sample 2BHK",
+    "address": null,
+    "source": null,
+    "date": "2026-11-25",
+    "note": "Hand-made test plan, not read from an image. The layout itself is the test input; values a plan would not show are flagged."
+  },
+  "levels": {"ffl": 0, "ceiling": 2850, "soffit": 3000, "lintel": 2100, "sill": 900,
+             "flag": ["ceiling", "soffit", "lintel", "sill"], "note": "Typical RCC flat heights assumed; no section available"},
+  "calibration": {"image": null, "a_px": null, "b_px": null, "a_mm": [0, 0], "b_mm": [11400, 0],
+                  "note": "No image: coordinates are authored directly in mm"},
+
+  "walls": [
+    {"id": "X1", "a": [0, 0],         "b": [8975, 0],     "t": 230, "align": "left", "kind": "external"},
+    {"id": "P1", "a": [8975, 0],      "b": [11400, 0],    "t": 230, "align": "left", "kind": "parapet", "height": 1050,
+     "flag": ["height"], "note": "Balcony parapet height assumed"},
+    {"id": "P2", "a": [11400, 0],     "b": [11400, 1845], "t": 230, "align": "left", "kind": "parapet", "height": 1050,
+     "flag": ["height"], "note": "Balcony parapet height assumed"},
+    {"id": "X2", "a": [11400, 1845],  "b": [11400, 7800], "t": 230, "align": "left", "kind": "external"},
+    {"id": "X3", "a": [11400, 7800],  "b": [0, 7800],     "t": 230, "align": "left", "kind": "external"},
+    {"id": "X4", "a": [0, 7800],      "b": [0, 0],        "t": 230, "align": "left", "kind": "external"},
+
+    {"id": "I1", "a": [230, 4000],    "b": [11170, 4000], "t": 115, "align": "left",  "kind": "internal"},
+    {"id": "I2", "a": [3830, 4115],   "b": [3830, 7570],  "t": 115, "align": "right", "kind": "internal"},
+    {"id": "I3", "a": [5745, 4115],   "b": [5745, 7570],  "t": 115, "align": "right", "kind": "internal"},
+    {"id": "I4", "a": [8860, 4115],   "b": [8860, 7570],  "t": 115, "align": "right", "kind": "internal"},
+    {"id": "I5", "a": [3945, 5800],   "b": [5745, 5800],  "t": 115, "align": "left",  "kind": "internal"},
+    {"id": "I6", "a": [8860, 230],    "b": [8860, 1845],  "t": 115, "align": "right", "kind": "internal"},
+    {"id": "I7", "a": [8975, 1730],   "b": [11170, 1730], "t": 115, "align": "left",  "kind": "internal"}
+  ],
+
+  "openings": [
+    {"id": "D1", "wall": "X2", "offset": 755,  "width": 1000, "kind": "door",         "swing": "left",  "hinge": "start", "sill": 0, "head": 2100,
+     "flag": ["head"], "note": "Main entrance"},
+    {"id": "D2", "wall": "I1", "offset": 2470, "width": 900,  "kind": "door",         "swing": "left",  "hinge": "end",   "sill": 0, "head": 2100, "flag": ["head"]},
+    {"id": "D3", "wall": "I2", "offset": 2185, "width": 750,  "kind": "door",         "swing": "right", "hinge": "end",   "sill": 0, "head": 2100, "flag": ["head"]},
+    {"id": "D4", "wall": "I1", "offset": 4270, "width": 750,  "kind": "door",         "swing": "left",  "hinge": "end",   "sill": 0, "head": 2100, "flag": ["head"]},
+    {"id": "D5", "wall": "I1", "offset": 5970, "width": 900,  "kind": "door",         "swing": "left",  "hinge": "start", "sill": 0, "head": 2100, "flag": ["head"]},
+    {"id": "K1", "wall": "I1", "offset": 8970, "width": 900,  "kind": "opening",      "swing": "none",  "hinge": "none",  "sill": 0, "head": 2100, "flag": ["head"],
+     "note": "Kitchen entry assumed as a plain opening (no shutter)"},
+    {"id": "SD1", "wall": "I6", "offset": 200, "width": 1200, "kind": "sliding_door", "swing": "none",  "hinge": "none",  "sill": 0, "head": 2100, "flag": ["head"]},
+
+    {"id": "W1", "wall": "X1", "offset": 1500, "width": 1800, "kind": "window",     "swing": "none", "hinge": "none", "sill": 900,  "head": 2100, "flag": ["sill", "head"]},
+    {"id": "W2", "wall": "X1", "offset": 4800, "width": 1800, "kind": "window",     "swing": "none", "hinge": "none", "sill": 900,  "head": 2100, "flag": ["sill", "head"]},
+    {"id": "W3", "wall": "X4", "offset": 4800, "width": 1800, "kind": "window",     "swing": "none", "hinge": "none", "sill": 900,  "head": 2100, "flag": ["sill", "head"]},
+    {"id": "W4", "wall": "X3", "offset": 8700, "width": 1500, "kind": "window",     "swing": "none", "hinge": "none", "sill": 900,  "head": 2100, "flag": ["sill", "head"]},
+    {"id": "W5", "wall": "X3", "offset": 3300, "width": 1500, "kind": "window",     "swing": "none", "hinge": "none", "sill": 900,  "head": 2100, "flag": ["sill", "head"]},
+    {"id": "W6", "wall": "X2", "offset": 3355, "width": 1200, "kind": "window",     "swing": "none", "hinge": "none", "sill": 1050, "head": 2100, "flag": ["sill", "head"],
+     "note": "Kitchen window sill above worktop assumed"},
+    {"id": "V1", "wall": "X3", "offset": 6300, "width": 600,  "kind": "ventilator", "swing": "none", "hinge": "none", "sill": 1500, "head": 2100, "flag": ["sill", "head"]}
+  ],
+
+  "rooms": [
+    {"id": "LD",  "name": "Living / Dining", "type": "living_dining",
+     "poly": [[230, 230], [8860, 230], [8860, 1845], [11170, 1845], [11170, 4000], [230, 4000]]},
+    {"id": "KIT", "name": "Kitchen",          "type": "kitchen",
+     "poly": [[8975, 4115], [11170, 4115], [11170, 7570], [8975, 7570]]},
+    {"id": "MBR", "name": "Master bedroom",   "type": "master_bedroom",
+     "poly": [[230, 4115], [3830, 4115], [3830, 7570], [230, 7570]]},
+    {"id": "MBT", "name": "Master bath",      "type": "bath", "ffl": -20, "flag": ["ffl"],
+     "poly": [[3945, 5915], [5745, 5915], [5745, 7570], [3945, 7570]], "note": "Wet-area floor drop assumed"},
+    {"id": "CBT", "name": "Common bath",      "type": "bath", "ffl": -20, "flag": ["ffl"],
+     "poly": [[3945, 4115], [5745, 4115], [5745, 5800], [3945, 5800]], "note": "Wet-area floor drop assumed"},
+    {"id": "BR2", "name": "Bedroom 2",        "type": "bedroom",
+     "poly": [[5860, 4115], [8860, 4115], [8860, 7570], [5860, 7570]]},
+    {"id": "BAL", "name": "Balcony",          "type": "balcony", "ffl": -20, "flag": ["ffl"],
+     "poly": [[8975, 230], [11170, 230], [11170, 1730], [8975, 1730]], "note": "Balcony floor drop assumed"}
+  ],
+
+  "flags": [
+    {"id": "Q1", "ref": "CBT", "note": "Common bath has no external wall: assumed mechanical exhaust via duct; confirm shaft location"},
+    {"id": "Q2", "ref": null,  "note": "No columns shown: assumed load-bearing brick or columns hidden in walls; confirm structure"}
+  ]
+}
