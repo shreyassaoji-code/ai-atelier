@@ -191,7 +191,9 @@ def check(m: Model) -> Report:
     for r in m.rooms:
         rp = rpoly[r["id"]].buffer(3)
         touching = [o for o in m.openings if cuts[o["id"]].intersects(rp)]
-        if r.get("type") not in NO_DOOR_OK and not any(o["kind"] in DOORLIKE for o in touching):
+        via_void = any(v.buffer(2).intersects(rp) for v in m.voids)  # demolished wall stretch
+        if r.get("type") not in NO_DOOR_OK and not via_void \
+                and not any(o["kind"] in DOORLIKE for o in touching):
             R.E("E-ROOM-NO-DOOR", f"room {r['id']} ({r.get('name')}) has no door or opening")
         if r.get("type") in NEEDS_LIGHT and not any(o["kind"] in LIGHTLIKE for o in touching):
             R.W("W-ROOM-NO-WINDOW", f"room {r['id']} ({r.get('name')}) has no window or ventilator")

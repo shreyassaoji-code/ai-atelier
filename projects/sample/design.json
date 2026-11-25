@@ -1,0 +1,29 @@
+{
+  "schema": "atelier/design@1",
+  "based_on": "survey.json",
+  "demolish": [
+    {"opening": "D5", "note": "Bedroom 2 door moved east; old opening infilled"},
+    {"wall": "I1", "from": 8745, "to": 10345, "note": "Semi-open kitchen: 1600 of the kitchen wall removed (takes opening K1 with it)"}
+  ],
+  "new_walls": [
+    {"id": "N1", "a": [2755, 5800], "b": [2755, 7570], "t": 75, "align": "right", "kind": "partition", "note": "Dress room: west partition"},
+    {"id": "N2", "a": [2755, 5800], "b": [3830, 5800], "t": 75, "align": "left",  "kind": "partition", "note": "Dress room: south partition"}
+  ],
+  "new_openings": [
+    {"id": "ND5", "wall": "I1a", "offset": 7570, "width": 900, "kind": "door", "swing": "left", "hinge": "end", "sill": 0, "head": 2100},
+    {"id": "DR1", "wall": "N2", "offset": 200, "width": 750, "kind": "opening", "swing": "none", "hinge": "none", "sill": 0, "head": 2100}
+  ],
+  "rooms": [
+    {"id": "MBR", "poly": [[230, 4115], [3830, 4115], [3830, 5800], [2755, 5800], [2755, 7570], [230, 7570]]},
+    {"id": "DRS", "name": "Dress", "type": "dress", "poly": [[2830, 5875], [3830, 5875], [3830, 7570], [2830, 7570]]}
+  ],
+  "furniture": [],
+  "joinery": [],
+  "ceilings": [],
+  "wall_features": [],
+  "floors": [],
+  "finishes": [],
+  "views": [],
+  "cameras": [],
+  "notes": []
+}

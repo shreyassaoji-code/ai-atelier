@@ -133,6 +133,17 @@ def room_polygon(room) -> Polygon:
     return orient(Polygon(room["poly"]), sign=1.0)  # counter-clockwise
 
 
+def label_point(room):
+    """Where a room's label goes: the centroid when it is (nearly) as deep inside
+    the room as the pole of inaccessibility, otherwise the pole (L-shapes)."""
+    from shapely.ops import polylabel
+    poly = room_polygon(room)
+    pole = polylabel(poly, tolerance=10)
+    c = poly.centroid
+    depth = lambda p: poly.exterior.distance(p) if poly.contains(p) else -1  # noqa: E731
+    return c if depth(c) >= 0.9 * depth(pole) else pole
+
+
 def room_area_m2(room) -> float:
     return room_polygon(room).area / 1e6
 

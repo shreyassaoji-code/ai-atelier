@@ -30,6 +30,13 @@ class Model:
     design: dict = field(default_factory=dict)
     verify: list = field(default_factory=list)   # [(ref, field, note)]
     sources: list = field(default_factory=list)
+    survey_walls: list = field(default_factory=list)     # untouched survey (for the measured sheet)
+    survey_openings: list = field(default_factory=list)
+    demolished: list = field(default_factory=list)       # {"kind", "id", "wall", "poly"(shapely), "opening"}
+    infills: list = field(default_factory=list)          # {"id", "wall", "poly"}: openings closed up
+    voids: list = field(default_factory=list)            # removed wall stretches (act as openings)
+    rooms_survey: list = field(default_factory=list)
+    design_raw: dict = field(default_factory=dict)
 
     # ---- lookups
     def wall(self, wid):
@@ -83,7 +90,8 @@ def _collect_flags(kind, objs, file_flag, out):
                 out.append((ref, fld, o.get("note", "")))
 
 
-def load(root, design: str | None = None) -> Model:
+def load(root, design: str | None | bool = None) -> Model:
+    """design=None: design.json if present; a file name/path: that design; False: survey only."""
     root = Path(root)
     sv = _read(root / "survey.json")
     ff = sv.get("flag") is True
@@ -91,6 +99,9 @@ def load(root, design: str | None = None) -> Model:
               calibration=sv.get("calibration", {}), walls=copy.deepcopy(sv.get("walls", [])),
               openings=copy.deepcopy(sv.get("openings", [])), rooms=copy.deepcopy(sv.get("rooms", [])),
               flags=list(sv.get("flags", [])), sources=["survey.json"])
+    m.survey_walls = copy.deepcopy(m.walls)
+    m.survey_openings = copy.deepcopy(m.openings)
+    m.rooms_survey = copy.deepcopy(m.rooms)
     for kind in ("walls", "openings", "rooms"):
         _collect_flags(kind[:-1], getattr(m, kind), ff, m.verify)
     for name in ("levels", "calibration"):
@@ -98,24 +109,40 @@ def load(root, design: str | None = None) -> Model:
     for q in m.flags:
         m.verify.append((q.get("ref") or q.get("id"), None, q.get("note", "")))
 
+    if design is False:
+        return m
     dpath = root / (design or "design.json")
     if design and not dpath.exists():
         dpath = Path(design)
     if not dpath.exists():
         return m
     ds = _read(dpath)
+    m.design_raw = ds
     m.sources.append(dpath.name)
     dff = ds.get("flag") is True
 
     # demolition
     for d in ds.get("demolish", []):
         if "opening" in d:
+            o = next((o for o in m.openings if o["id"] == d["opening"]), None)
+            if o and m.wall(o["wall"]):
+                cut = geom.opening_polygon(m.wall(o["wall"]), o, extra=0)
+                m.demolished.append({"kind": "opening", "id": o["id"], "wall": o["wall"], "poly": cut, "opening": o})
+                m.infills.append({"id": o["id"], "wall": o["wall"], "poly": cut})
             m.openings = [o for o in m.openings if o["id"] != d["opening"]]
         elif "wall" in d:
             w = m.wall(d["wall"])
             if w is None:
                 continue
             m.walls.remove(w)
+            o0, o1 = d.get("from", 0), d.get("to", geom.wall_length(w))
+            gone = geom.opening_polygon(w, {"offset": o0, "width": o1 - o0}, extra=0)
+            m.demolished.append({"kind": "wall", "id": w["id"], "wall": w["id"], "poly": gone, "from": o0, "to": o1})
+            m.voids.append(gone)
+            for o in m.openings:  # doors/windows lost with the wall
+                if o["wall"] == w["id"] and o["offset"] < o1 and o["offset"] + o["width"] > o0:
+                    m.demolished.append({"kind": "opening", "id": o["id"], "wall": w["id"],
+                                         "poly": geom.opening_polygon(w, o, extra=0), "opening": o, "host": w})
             if "from" in d:
                 parts = _split_wall(w, d["from"], d["to"])
                 m.walls += parts
@@ -133,8 +160,8 @@ def load(root, design: str | None = None) -> Model:
             else:
                 m.openings = [o for o in m.openings if o["wall"] != w["id"]]
 
-    m.walls += copy.deepcopy(ds.get("new_walls", []))
-    m.openings += copy.deepcopy(ds.get("new_openings", []))
+    m.walls += [dict(w, _new=True) for w in copy.deepcopy(ds.get("new_walls", []))]
+    m.openings += [dict(o, _new=True) for o in copy.deepcopy(ds.get("new_openings", []))]
     for r in ds.get("rooms", []):
         cur = m.room(r["id"])
         if cur:
