@@ -1,3 +1,13 @@
 {
-  "sheets": ["measured", "dismantling", "partitions"]
+  "sheets": [
+    "cover",
+    "contents",
+    "measured",
+    "dismantling",
+    "partitions",
+    "presentation",
+    "flooring",
+    "wall_finishes",
+    "furniture"
+  ]
 }

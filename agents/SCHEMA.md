@@ -48,14 +48,14 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `demolish[]` | object | `{"wall": id}` whole wall, `{"wall": id, "from": o, "to": o}` part (offsets), or `{"opening": id}` (opening infilled) |
 | `new_walls[]` | wall | as survey walls |
 | `new_openings[]` | opening | as survey openings; `wall` may be a new wall |
-| `rooms[]` | object | by `id`: overrides survey rooms (any field), or adds a new room (needs `poly`) |
+| `rooms[]` | object | by `id`: overrides survey rooms (any field), or adds a new room (needs `poly`). Design-only field: `wall_finish` (finish code for every wall face of the room unless a `wall_features[]` entry covers it) |
 | `furniture[]` | object | `id`, `room`, `kind`, `at` (centre of box), `size` `[w, d, h]` (w across the front, d front-to-back), `facing` (direction the front faces), `label` |
 | `joinery[]` | object | `id`, `room`, `kind`, `wall` (host), `offset`, `width`, `depth`, `z` (bottom, default 0), `height`, `rows[]` (bottom to top) |
 | `joinery[].rows[]` | object | `height`, `modules[]`: `{"w", "type", "label"}`. **Σ module w = joinery width**, **Σ row heights = height** |
 | `ceilings[]` | object | `room`, `z` (main ceiling), `steps[]`: `{"inset" or "poly", "z", "light"}` (`inset` = mm in from the room polygon), `lights[]`: `{"kind", "at"}` |
 | `wall_features[]` | object | `id`, `room`, `wall`, `offset`, `width`, `z0`, `z1`, `kind`, `finish` |
-| `floors[]` | object | `room`, `finish`, `pattern`, `module` `[w, l]`, `start`, `skirting` (height) |
-| `finishes[]` | object | `code`, `kind`, `name`, `maker`, `ref` (catalogue code). No colour values: these live in `atelier/theme.py`. |
+| `floors[]` | object | `room`, `finish`, `pattern`, `module` `[w, l]` (plank or tile; mm), `start`, `skirting` (height), `angle` (optional, degrees anticlockwise from east; planks run along it) |
+| `finishes[]` | object | `code` (`FL-n` floors, `WFn` walls), `kind`, `name`, `maker`, `ref` (catalogue code). No colour values: material tones are mixed from `atelier/theme.py` tokens by `atelier/texture.py`. |
 | `views[]` | object | `id`, `kind`, `room` (optional), `wall` (elevations), `scale` (e.g. 25 for 1:25), `title` |
 | `cameras[]` | object | `id`, `room`, `eye` `[x,y,z]`, `target` `[x,y,z]`, `lens` (mm, 35 mm equivalent) |
 | `notes[]` | object | `id`, `applies` (`"all"`, room id or view id), `text` |

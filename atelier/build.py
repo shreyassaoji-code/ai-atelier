@@ -17,7 +17,8 @@ from pathlib import Path
 from pypdf import PdfWriter
 
 from atelier.model import load
-from atelier.sheets import SHEETS
+from atelier.draw import envelope_bounds
+from atelier.sheets import SHEET_DEFS, SHEETS, fit_scale
 from atelier.validate import check
 
 
@@ -38,6 +39,8 @@ def main(argv=None):
         print(f"validate: {len(rep.errors)} errors; fix the data before building")
         return 1
     names = json.loads((a.project / "project.json").read_text())["sheets"]
+    sc = fit_scale(envelope_bounds(m.walls))
+    m.album = [(i, n, SHEET_DEFS[n][1], f"1:{sc}" if SHEET_DEFS[n][2] else "—") for i, n in enumerate(names, 1)]
     out = a.project / "out" / "sheets"
     built = []
     for i, name in enumerate(names, 1):

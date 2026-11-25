@@ -198,6 +198,22 @@ def check(m: Model) -> Report:
         if r.get("type") in NEEDS_LIGHT and not any(o["kind"] in LIGHTLIKE for o in touching):
             R.W("W-ROOM-NO-WINDOW", f"room {r['id']} ({r.get('name')}) has no window or ventilator")
 
+    # ---- finish codes resolve -------------------------------------------------
+    codes = {f.get("code") for f in m.finishes}
+    for fl in m.floors:
+        if fl.get("finish") not in codes:
+            R.E("E-FINISH", f"floor in {fl.get('room')}: unknown finish {fl.get('finish')!r}")
+        if not m.room(fl.get("room")):
+            R.E("E-REF", f"floor finish for unknown room {fl.get('room')!r}")
+    for wf in m.wall_features:
+        if wf.get("finish") and wf["finish"] not in codes:
+            R.E("E-FINISH", f"wall feature {wf.get('id')}: unknown finish {wf['finish']!r}")
+        if not m.wall(wf.get("wall")):
+            R.E("E-REF", f"wall feature {wf.get('id')} on unknown wall {wf.get('wall')!r}")
+    for r in m.rooms:
+        if r.get("wall_finish") and r["wall_finish"] not in codes:
+            R.E("E-FINISH", f"room {r['id']}: unknown wall finish {r['wall_finish']!r}")
+
     # ---- 7. computed vs printed area ---------------------------------------------
     for r in m.rooms:
         if r.get("area_printed"):

@@ -141,6 +141,33 @@ class Sheet:
         self.ax.add_patch(Rectangle((x, y), w, h, facecolor=fill or "none", edgecolor=edge or "none",
                                     lw=lw, hatch=hatch, linestyle=dash or "-"))
 
+    def image(self, arr, x0, y0, x1, y1, clip_rings=None, z=1):
+        """Place an RGB(A) raster on the page box (x0, y0)-(x1, y1), optionally clipped."""
+        im = self.ax.imshow(arr, extent=(x0, x1, y1, y0), origin="upper", interpolation="bilinear",
+                            zorder=z, aspect="auto")
+        if clip_rings:
+            verts, codes = [], []
+            for ext, holes in clip_rings:
+                for ring in [ext, *holes]:
+                    verts += list(ring) + [ring[0]]
+                    codes += [MplPath.MOVETO] + [MplPath.LINETO] * (len(ring) - 1) + [MplPath.CLOSEPOLY]
+            patch = PathPatch(MplPath(verts, codes), transform=self.ax.transData, facecolor="none", edgecolor="none")
+            im.set_clip_path(patch)
+        self.ax.set_xlim(0, T.PAGE_W)
+        self.ax.set_ylim(T.PAGE_H, 0)
+        return im
+
+    def lines(self, polylines, color=None, lw=LW_HAIR, z=2, dash=None):
+        """Many polylines at once (patterns)."""
+        from matplotlib.collections import LineCollection
+        if polylines:
+            self.ax.add_collection(LineCollection(polylines, colors=color or T.INK, linewidths=lw, zorder=z,
+                                                  linestyles=dash or "solid", capstyle="butt"))
+
+    def halo(self, width=2.4):
+        from matplotlib import patheffects
+        return [patheffects.withStroke(linewidth=width, foreground=T.PAPER)]
+
     def circle(self, x, y, r, edge=None, fill=None, lw=LW_THIN):
         self.ax.add_patch(Circle((x, y), r, facecolor=fill or "none", edgecolor=edge or T.INK, lw=lw))
 
@@ -279,41 +306,64 @@ class PlanView:
                 self.sh.line(arc, arc_color or (c if dash else T.GREY), LW_HAIR, dash)
 
     # ---- labels
-    def label_box(self, room, cx, cy, extra=0):
+    def label_box(self, room, cx, cy, extra=0, lines=()):
         """Plan-mm box the label occupies when centred on (cx, cy)."""
         from shapely.geometry import box
         name = room.get("name", room["id"])
-        hw = max(text_width_mm(name, T.SIZES["project"], 0.5), 16) / 2 * self.s
+        widths = [text_width_mm(name, T.SIZES["project"], 0.62), 16]
+        widths += [text_width_mm(s_, T.SIZES["dim"], 0.6) for s_ in lines]
+        hw = (max(widths) / 2 + 1.0) * self.s
         top, bot = 4.8 * self.s, (4.2 + 3.0 * extra) * self.s
         return box(cx - hw, cy - bot, cx + hw, cy + top)
 
-    def room_label(self, room, extra_lines=(), avoid=None):
-        """Name (serif small caps); ID · area; extra (text, flagged) lines.
-        `avoid` (plan geometry, e.g. door swings): the label shifts off it if it can."""
+    def label_spot(self, room, avoid=None, extra=0, width_mm=None, lines=()):
+        """Plan point for a room label: the label point, moved off `avoid` if it can be."""
         poly = geom.room_polygon(room)
         p = geom.label_point(room)
         px, py = p.x, p.y
-        if avoid is not None and not avoid.is_empty:
-            inner = poly.buffer(-60)
-            ok = lambda b: inner.contains(b) and not b.intersects(avoid)  # noqa: E731
-            if not ok(self.label_box(room, px, py, len(extra_lines))):
-                cands = sorted(((px + dx * k, py + dy * k) for k in range(1, 21)
-                                for dx, dy in ((0, 100), (0, -100), (100, 0), (-100, 0),
-                                               (71, 71), (-71, 71), (71, -71), (-71, -71))),
-                               key=lambda c: (c[0] - px) ** 2 + (c[1] - py) ** 2)
-                for c in cands:
-                    if ok(self.label_box(room, *c, len(extra_lines))):
-                        px, py = c
-                        break
+        if avoid is None:
+            return px, py
+        inner = poly.buffer(-60)
+
+        def box_at(cx, cy):
+            b = self.label_box(room, cx, cy, extra, lines)
+            if width_mm:
+                from shapely.geometry import box
+                hw = width_mm / 2 * self.s
+                b = box(cx - hw, b.bounds[1], cx + hw, b.bounds[3])
+            return b
+        ok = lambda b: inner.contains(b) and not b.intersects(avoid)  # noqa: E731
+        if ok(box_at(px, py)):
+            return px, py
+        cands = sorted(((px + dx * k, py + dy * k) for k in range(1, 31)
+                        for dx, dy in ((0, 100), (0, -100), (100, 0), (-100, 0),
+                                       (71, 71), (-71, 71), (71, -71), (-71, -71))),
+                       key=lambda c: (c[0] - px) ** 2 + (c[1] - py) ** 2)
+        best = min(cands + [(px, py)], key=lambda c: box_at(*c).intersection(avoid).area
+                   + (0 if inner.contains(box_at(*c)) else 1e9))
+        for c in cands:
+            if ok(box_at(*c)):
+                return c
+        return best
+
+    def room_label(self, room, extra_lines=(), avoid=None):
+        """Name (serif small caps); ID · area; extra lines: (text, flagged[, strong]).
+        `avoid` (plan geometry, e.g. door swings): the label shifts off it if it can."""
+        poly = geom.room_polygon(room)
+        px, py = self.label_spot(room, avoid if avoid is not None else poly.boundary.buffer(1),
+                                 len(extra_lines), lines=[ln[0] for ln in extra_lines])
         x, y = self.P(px, py)
         sh = self.sh
         sh.smallcaps(x, y - 1.0, room.get("name", room["id"]), ha="center")
         sh.text(x - 1.0, y + 3.0, room["id"], sans("dim", 600), T.ACCENT, ha="right")
         sh.text(x, y + 3.0, "·", sans("dim"), T.GREY, ha="center")
         sh.text(x + 1.0, y + 3.0, f"{poly.area / 1e6:.2f} m²", sans("dim"), T.GREY, ha="left")
-        for i, (s, flagged) in enumerate(extra_lines):
-            sh.text(x, y + 6.2 + i * 3.0, s + ("*" if flagged else ""), sans("dim", 500 if flagged else 400),
-                    T.FLAG if flagged else T.GREY, ha="center")
+        for i, line in enumerate(extra_lines):
+            s, flagged = line[0], line[1]
+            strong = len(line) > 2 and line[2]
+            sh.text(x, y + 6.2 + i * 3.0, s + ("*" if flagged else ""),
+                    sans("dim", 600 if (flagged or strong) else 400),
+                    T.FLAG if flagged else (T.INK if strong else T.GREY), ha="center")
 
     def tag(self, x_mm, y_mm, s, color=None, sub=None, sub_flag=False):
         x, y = self.P(x_mm, y_mm)

@@ -50,7 +50,7 @@ class Frame:
         sh.text(T.STRIP_X, self.y, sub, sans("legend"), T.GREY)
         self.y += 4.2
         self.rule()
-        for k, v in (("Drawing", title), ("Scale", f"1:{scale} at A3"),
+        for k, v in (("Drawing", title), ("Scale", f"1:{scale} at A3" if scale else "—"),
                      ("Issued", date.today().isoformat()), ("Data", " + ".join(m.sources))):
             self.field(k, v)
         self.y += 1.2
@@ -61,10 +61,11 @@ class Frame:
             xx = T.STRIP_X + i * 36
             sh.caps(xx, yb - 24, k, T.GREY)
             sh.line([(xx, yb - 18.5), (xx + 31, yb - 18.5)], T.INK, LW_HAIR)
-        north_arrow(sh, T.STRIP_X + 5.2, yb - 5.6)
-        step = 1000 / scale
-        metres = max(1, min(5, int((T.RIGHT - T.STRIP_X - 18) // step)))
-        scale_bar(sh, T.STRIP_X + 16, yb - 7.0, scale, metres)
+        if scale:
+            north_arrow(sh, T.STRIP_X + 5.2, yb - 5.6)
+            step = 1000 / scale
+            metres = max(1, min(5, int((T.RIGHT - T.STRIP_X - 18) // step)))
+            scale_bar(sh, T.STRIP_X + 16, yb - 7.0, scale, metres)
         # disclaimer band
         sh.rule(x0, T.RIGHT, y1 + 5)
         sh.text(x0, y1 + 11, DISCLAIMER, sans("legend", 600), T.FLAG)
@@ -113,7 +114,7 @@ class Frame:
                     return
                 if first and prefix:
                     self.sh.text(T.STRIP_X, self.y, prefix, sans("legend", 600), pc or T.INK)
-                self.sh.text(T.STRIP_X + 7, self.y, c, sans("legend"), color or T.INK)
+                self.sh.text(T.STRIP_X + (7 if prefix else 0), self.y, c, sans("legend"), color or T.INK)
                 self.y += LINE
                 first = False
 
@@ -414,4 +415,535 @@ def partitions(m, no, total):
     return sh
 
 
-SHEETS = OrderedDict(measured=measured, dismantling=dismantling, partitions=partitions)
+# (see the second half of this file)
+
+
+# =================================================================== presentation & schedules
+import math  # noqa: E402
+
+from atelier import texture as TX  # noqa: E402
+from atelier.symbols import (draw_furniture, draw_joinery, furniture_footprint_page,  # noqa: E402
+                             furniture_parts, _to_plan)
+
+RASTER_DPI = 240
+
+
+def base_plan(pv, m, wall_fill=None, opening_color=None, z=8, parapet_edge=None):
+    """Final walls (cut for openings) + openings, drawn above everything on the floor."""
+    walls, openings = m.walls, m.openings
+    full, low = split_walls(walls)
+    ops_on = lambda ws: [o for o in openings if any(w["id"] == o["wall"] for w in ws)]  # noqa: E731
+    pv.fill(geom.cut_walls(full, ops_on(full)), fill=wall_fill or T.POCHE, z=z)
+    pv.fill(geom.cut_walls(low, ops_on(low)), fill=T.LIGHT, edge=parapet_edge or T.INK, lw=LW_THIN, z=z)
+    by_id = {w["id"]: w for w in walls}
+    for o in openings:
+        pv.opening(by_id[o["wall"]], o, color=opening_color)
+
+
+def floor_voids(m):
+    """Demolished wall stretches get the floor of the first room they touch."""
+    out = {}
+    for v in m.voids:
+        for r in m.rooms:
+            if v.buffer(2).intersects(geom.room_polygon(r)):
+                out.setdefault(r["id"], []).append(v.buffer(1))
+                break
+    return out
+
+
+def thresholds(pv, m):
+    """Stone threshold in every door-type opening."""
+    by_id = {w["id"]: w for w in m.walls}
+    for o in m.openings:
+        if o["kind"] in ("door", "double_door", "sliding_door", "opening") and o["wall"] in by_id:
+            pv.fill(geom.opening_polygon(by_id[o["wall"]], o, extra=0), fill=TX.hexc(TX.palette()["worktop"]),
+                    edge=TX.hexc(TX.mix(T.INK, T.PAPER, 0.55)), lw=LW_HAIR, z=7)
+
+
+def _plan_setup(m, title, subtitle, no, total):
+    bounds = envelope_bounds(m.walls)
+    scale = fit_scale(bounds)
+    sh = Sheet()
+    fr = Frame(sh, m, title, subtitle.format(scale=scale), no, total, scale)
+    return sh, fr, PlanView(sh, bounds, scale), scale
+
+
+def _finish_maps(m):
+    return {f["code"]: f for f in m.finishes}, {f["room"]: f for f in m.floors}
+
+
+def _caps_label(pv, room, avoid, sub=None):
+    name = room.get("name", room["id"])
+    w = text_width_mm(name.upper(), T.SIZES["legend_head"], 0.78) + 4
+    px, py = pv.label_spot(room, avoid, 0, width_mm=w)
+    x, y = pv.P(px, py)
+    pv.sh.caps(x, y, name, T.INK, role="legend_head", weight=600, ha="center", zorder=12,
+               path_effects=pv.sh.halo(2.6))
+    if sub:
+        pv.sh.text(x, y + 3.2, sub, sans("dim"), T.GREY, ha="center", zorder=12, path_effects=pv.sh.halo(2.2))
+
+
+def presentation(m, no, total):
+    sh, fr, pv, scale = _plan_setup(m, "Presentation plan", "Furnished layout · scale 1:{scale}", no, total)
+    fin, flo = _finish_maps(m)
+    k = RASTER_DPI / 25.4 / scale
+    voids_for = floor_voids(m)
+    for i, r in enumerate(m.rooms, 1):
+        fl = flo.get(r["id"])
+        if not fl:
+            continue
+        poly = unary_union([geom.room_polygon(r)] + voids_for.get(r["id"], [])).buffer(30, join_style=2)
+        b = poly.bounds
+        arr = TX.floor_texture(fin[fl["finish"]], fl, b, k, seed=i)
+        (x0, y1), (x1, y0) = pv.P(b[0], b[1]), pv.P(b[2], b[3])
+        sh.image(arr, x0, y0, x1, y1, clip_rings=pv.rings(poly), z=1)
+    # soft shadows from furniture, joinery and walls, clipped to the floors
+    casters = [furniture_footprint_page(pv, f) for f in m.furniture if f.get("kind") != "rug"]
+    for j in m.joinery:
+        g = geom.joinery_polygon(j, m.wall(j["wall"]), m.room(j["room"]))
+        casters.append([pv.P(*c) for c in g.exterior.coords[:-1]])
+    full, _ = split_walls(m.walls)
+    casters += [(ext, [list(h) for h in holes]) for ext, holes in pv.rings(geom.cut_walls(full, m.openings))]
+    floor_rings = pv.rings(unary_union([geom.room_polygon(r) for r in m.rooms]))
+    sh.image(TX.soft_shadow(casters, T.PAGE_W, T.PAGE_H), 0, 0, T.PAGE_W, T.PAGE_H, clip_rings=floor_rings, z=2)
+    for f in sorted(m.furniture, key=lambda f: f.get("kind") != "rug"):
+        draw_furniture(pv, f, "present")
+    for j in m.joinery:
+        draw_joinery(pv, j, m.wall(j["wall"]), m.room(j["room"]), "present")
+    base_plan(pv, m)
+    thresholds(pv, m)
+    avoid = unary_union([_to_plan(f, furniture_parts(f)[0][0]) for f in m.furniture if f.get("kind") != "rug"]
+                        + [geom.joinery_polygon(j, m.wall(j["wall"]), m.room(j["room"])) for j in m.joinery]
+                        + [swings(m.walls, m.openings)])
+    for r in m.rooms:
+        _caps_label(pv, r, avoid, f"{geom.room_area_m2(r):.1f} m²")
+    # legend: floor finishes as real swatches
+    items = []
+    for code in sorted({fl["finish"] for fl in m.floors}):
+        f = fin[code]
+        fl = next(x for x in m.floors if x["finish"] == code)
+
+        def swatch(x, y, w, h, f=f, fl=fl):
+            kk = 60 / (w * 1.0)                      # ~1.2 m of material in the swatch
+            arr = TX.floor_texture(f, fl, (0, 0, w * 170, h * 170), kk * 0.0 + 0.4 / 1, seed=7)
+            sh.image(arr, x, y, x + w, y + h, z=4)
+            sh.swatch(x, y, w, h, edge=T.HAIR, lw=LW_HAIR)
+        items.append((f"{code}  {f['name'].split(',')[0]}", swatch))
+    fr.legend(items)
+    fr.head("Notes")
+    fr.lines([("", "Furniture, finishes and textures are indicative; see the flooring, wall finish and "
+               "furniture sheets for codes and sizes.", None)], color=T.GREY)
+    return sh
+
+
+def cover(m, no, total):
+    sh = Sheet()
+    fr = Frame(sh, m, "Interior working drawings", f"Drawing album · {total} sheets", no, total, None)
+    x0, y0, x1, y1 = T.DRAW
+    p = m.project
+    sh.text(x0, y0 + 30, p.get("name") or "—", serif("sheet_no", 500), T.INK)
+    sh.caps(x0, y0 + 40, f"{len(m.rooms)} rooms · {sum(geom.room_area_m2(r) for r in m.rooms):.1f} m² carpet",
+            T.GREY, role="legend_head")
+    env = envelope_bounds(m.walls)
+    carpet = sum(geom.room_area_m2(r) for r in m.rooms)
+    built = (env[2] - env[0]) * (env[3] - env[1]) / 1e6
+    rows = [("Address", p.get("address") or "—"), ("Date", p.get("date") or "—"),
+            ("Rooms", str(len(m.rooms))), ("Carpet area", f"{carpet:.2f} m²"),
+            ("Built-up area", f"{built:.2f} m² (outer faces)"), ("Sheets", str(total)),
+            ("Data", " + ".join(m.sources))]
+    y = y0 + 60
+    for k_, v in rows:
+        sh.caps(x0, y, k_, T.GREY)
+        sh.text(x0 + 30, y, v, sans("legend"), T.INK)
+        y += 6
+    # key plan
+    scale = 75
+    cx = (x0 + 110 + x1) / 2
+    pv = PlanView(sh, env, scale, centre=(cx, (y0 + y1) / 2))
+    base_plan(pv, m, z=3)
+    for r in m.rooms:
+        px, py = pv.label_spot(r)
+        x, yy = pv.P(px, py)
+        sh.text(x, yy + 1.2, r["id"], sans("dim", 600), T.ACCENT, ha="center")
+    north_arrow(sh, pv.P(env[2], env[3])[0] + 10, pv.P(env[2], env[3])[1] + 6)
+    sh.caps(cx, pv.P(0, env[1])[1] + 10, f"Key plan · 1:{scale}", T.GREY, ha="center")
+    fr.head("Album")
+    fr.lines([("", "Drawn by the AI Atelier engine from survey and design data. Values marked * were not "
+               "read from the plan and must be verified on site.", None)], color=T.INK)
+    return sh
+
+
+def _table(sh, x, y, cols, header, rows, row_h=4.6):
+    """cols: [(width_mm, align)], rows: [[(text, style), ...]] style in {'', 'id', 'flag', 'strong', 'grey'}."""
+    xs = [x]
+    for w_, _ in cols:
+        xs.append(xs[-1] + w_)
+    for i, h in enumerate(header):
+        al = cols[i][1]
+        tx = xs[i] if al == "left" else xs[i + 1] - 1
+        sh.caps(tx, y, h, T.GREY, ha=al)
+    sh.rule(x, xs[-1], y + 1.6, T.INK, LW_HAIR)
+    y += 1.6 + row_h
+    for row in rows:
+        for i, cell in enumerate(row):
+            t, st = cell if isinstance(cell, tuple) else (cell, "")
+            al = cols[i][1]
+            tx = xs[i] if al == "left" else xs[i + 1] - 1
+            color = {"id": T.ACCENT, "flag": T.FLAG, "grey": T.GREY}.get(st, T.INK)
+            wgt = 600 if st in ("id", "strong", "flag") else 400
+            sh.text(tx, y, t + ("*" if st == "flag" else ""), sans("legend", wgt), color, ha=al)
+        sh.rule(x, xs[-1], y + 1.6, T.HAIR, LW_HAIR)
+        y += row_h
+    return y
+
+
+def contents(m, no, total):
+    sh = Sheet()
+    fr = Frame(sh, m, "Contents and room schedule", "Sheet index · rooms, areas and finishes", no, total, None)
+    x0, y0, x1, y1 = T.DRAW
+    sh.caps(x0, y0 + 8, "Sheet index", T.INK, role="legend_head", weight=600)
+    rows = [[(f"{i:02d}", "id"), title, sc] for i, _n, title, sc in m.album]
+    _table(sh, x0, y0 + 18, [(12, "left"), (62, "left"), (20, "right")], ["No", "Title", "Scale"], rows)
+    fin, flo = _finish_maps(m)
+    tx = x0 + 112
+    sh.caps(tx, y0 + 8, "Room schedule", T.INK, role="legend_head", weight=600)
+    ceil = m.levels.get("ceiling")
+    cflag = m.is_flagged(dict(m.levels), "ceiling")
+    rows, tot = [], 0.0
+    for r in m.rooms:
+        a = geom.room_area_m2(r)
+        tot += a
+        walls_codes = [r.get("wall_finish")] + sorted({wf["finish"] for wf in m.wall_features if wf["room"] == r["id"]})
+        ffl = r.get("ffl", 0)
+        rows.append([(r["id"], "id"), r.get("name", ""), r.get("type", "").replace("_", " "),
+                     f"{a:.2f}", (f"{ffl:+d}".replace("-", "−") if ffl else "±0", "flag" if m.is_flagged(r, "ffl") else ""),
+                     flo.get(r["id"], {}).get("finish", "—"), ", ".join(c for c in walls_codes if c) or "—",
+                     (str(ceil), "flag" if cflag else "")])
+    rows.append([("", ""), ("Total carpet area", "strong"), "", (f"{tot:.2f}", "strong"), "", "", "", ""])
+    _table(sh, tx, y0 + 18, [(12, "left"), (32, "left"), (28, "left"), (16, "right"), (14, "right"),
+                              (16, "right"), (32, "right"), (16, "right")],
+           ["ID", "Room", "Type", "m²", "FFL", "Floor", "Walls", "Ceiling"], rows)
+    fr.head("Abbreviations")
+    fr.lines([("FFL", "Finished floor level, mm from main floor", None), ("FL-n", "Floor finish", None),
+              ("WFn", "Wall finish", None), ("Fn", "Loose furniture item", None),
+              ("Jn", "Joinery item", None), ("*", "Not read from the plan: verify on site", T.FLAG)])
+    return sh
+
+
+# ---- flooring ------------------------------------------------------------------
+def _rot_pt(x, y, deg, o=(0, 0)):
+    a = math.radians(deg)
+    x, y = x - o[0], y - o[1]
+    return (o[0] + x * math.cos(a) - y * math.sin(a), o[1] + x * math.sin(a) + y * math.cos(a))
+
+
+def floor_pattern_lines(room, fl, fin, poly=None):
+    """Vector laying pattern for one room, clipped to it (plan mm polylines)."""
+    from shapely.geometry import LineString as LS, Polygon as Poly
+    from shapely.affinity import rotate
+    poly = poly if poly is not None else geom.room_polygon(room)
+    c = poly.centroid
+    mod = fl.get("module") or [600, 600]
+    pat = fl.get("pattern", "straight")
+    kind = fin.get("kind")
+    ang = fl.get("angle", 0)
+    big = rotate(poly, -ang, origin=c)                 # work in the laying frame
+    bx0, by0, bx1, by1 = big.bounds
+    lines = []
+    if kind in ("wood", "laminate", "veneer") and pat in ("herringbone", "chevron"):
+        n = max(2, round(mod[1] / mod[0]))
+        W = mod[0]
+        hb = rotate(poly, -(45 + ang), origin=(0, 0))
+        ux0, uy0, ux1, uy1 = [v / W for v in hb.bounds]
+        planks = []
+        for kk in range(int(uy0) - n - 2, int(uy1) + 2):
+            for mm_ in range(int((ux0 - kk - n) // (2 * n)) - 1, int((ux1 - kk) // (2 * n)) + 2):
+                bx = kk + 2 * n * mm_
+                planks.append(Poly([(bx, kk), (bx + n, kk), (bx + n, kk + 1), (bx, kk + 1)]))
+                planks.append(Poly([(bx, kk + 1), (bx + 1, kk + 1), (bx + 1, kk + 1 + n), (bx, kk + 1 + n)]))
+        for pl in planks:
+            g = rotate(Poly([(x * W, y * W) for x, y in pl.exterior.coords]), 45 + ang, origin=(0, 0))
+            g = g.boundary.intersection(poly)
+            for part in getattr(g, "geoms", [g]):
+                if part.length > 0:
+                    lines.append(list(part.coords))
+        return lines
+    if kind in ("wood", "laminate", "veneer"):
+        pw, pl_ = mod[0], mod[1]
+        y = by0 - (by0 % pw)
+        row = 0
+        while y <= by1:
+            seg = rotate(LS([(bx0 - 10, y), (bx1 + 10, y)]), ang, origin=c).intersection(poly)
+            for part in getattr(seg, "geoms", [seg]):
+                if part.length > 0:
+                    lines.append(list(part.coords))
+            off = ((row * 0.37) % 1.0) * pl_
+            x = bx0 - (bx0 % pl_) - off
+            while x <= bx1:
+                j = rotate(LS([(x, y), (x, y + pw)]), ang, origin=c).intersection(poly)
+                for part in getattr(j, "geoms", [j]):
+                    if part.length > 0:
+                        lines.append(list(part.coords))
+                x += pl_
+            y += pw
+            row += 1
+        return lines
+    # tiles and slabs: grid; 'centre' puts a joint cross on the room centre
+    tx, ty = mod[0], mod[1]
+    ox = c.x if fl.get("start") == "centre" else bx0
+    oy = c.y if fl.get("start") == "centre" else by0
+    x = ox - math.ceil((ox - bx0) / tx) * tx
+    while x <= bx1:
+        seg = rotate(LS([(x, by0 - 10), (x, by1 + 10)]), ang, origin=c).intersection(poly)
+        for part in getattr(seg, "geoms", [seg]):
+            if part.length > 0:
+                lines.append(list(part.coords))
+        x += tx
+    y = oy - math.ceil((oy - by0) / ty) * ty
+    while y <= by1:
+        seg = rotate(LS([(bx0 - 10, y), (bx1 + 10, y)]), ang, origin=c).intersection(poly)
+        for part in getattr(seg, "geoms", [seg]):
+            if part.length > 0:
+                lines.append(list(part.coords))
+        y += ty
+    return lines
+
+
+def flooring(m, no, total):
+    sh, fr, pv, scale = _plan_setup(m, "Flooring plan", "Floor finishes and laying · scale 1:{scale}", no, total)
+    fin, flo = _finish_maps(m)
+    voids_for = floor_voids(m)
+    for r in m.rooms:
+        fl = flo.get(r["id"])
+        if not fl:
+            continue
+        fpoly = unary_union([geom.room_polygon(r)] + voids_for.get(r["id"], []))
+        lines = floor_pattern_lines(r, fl, fin[fl["finish"]], fpoly)
+        sh.lines([[pv.P(*p) for p in ln] for ln in lines], T.MID, LW_HAIR, z=1)
+        # start / direction marks
+        c = geom.room_polygon(r).centroid
+        f = fin[fl["finish"]]
+        if f.get("kind") in ("wood", "laminate", "veneer") and fl.get("pattern") not in ("herringbone", "chevron"):
+            a = math.radians(fl.get("angle", 0))
+            L = 450
+            p0 = pv.P(c.x - math.cos(a) * L, c.y - math.sin(a) * L - 650)
+            p1 = pv.P(c.x + math.cos(a) * L, c.y + math.sin(a) * L - 650)
+            sh.ax.annotate("", xy=p1, xytext=p0, arrowprops=dict(arrowstyle="<|-|>", lw=LW_THIN, color=T.INK,
+                                                               mutation_scale=5), zorder=9)
+        elif fl.get("start") == "centre" and f.get("kind") not in ("wood", "laminate", "veneer"):
+            x, y = pv.P(c.x, c.y - 650)
+            sh.circle(x, y, 1.1, edge=T.INK, fill=T.PAPER, lw=LW_THIN)
+            sh.line([(x - 1.8, y), (x + 1.8, y)], T.INK, LW_HAIR, z=9)
+            sh.line([(x, y - 1.8), (x, y + 1.8)], T.INK, LW_HAIR, z=9)
+    base_plan(pv, m, opening_color=T.GREY)
+    sw = swings(m.walls, m.openings)
+    for r in m.rooms:
+        fl = flo.get(r["id"])
+        extra = []
+        if fl:
+            mod = fl.get("module") or []
+            full = f"{fl['finish']} · {fl.get('pattern')} {mod[0]}×{mod[1]}" if mod else fl["finish"]
+            b = geom.room_polygon(r).bounds
+            room_w_page = (b[2] - b[0]) / scale
+            fits = text_width_mm(full, T.SIZES["dim"], 0.6) + 3 < room_w_page
+            extra.append((full if fits else fl["finish"], False, True))
+            if fl.get("skirting"):
+                extra.append((f"skirting {fl['skirting']}", False))
+        if r.get("ffl"):
+            extra.append((f"FFL {r['ffl']:+d}".replace("-", "−"), m.is_flagged(r, "ffl")))
+        pv.room_label(r, extra, avoid=sw)
+    rows = []
+    for code in sorted({fl["finish"] for fl in m.floors}):
+        f = fin[code]
+        rooms_ = " ".join(fl["room"] for fl in m.floors if fl["finish"] == code)
+        rows.append((code, f"{f['name']}. Rooms: {rooms_}.", T.INK))
+    fr.legend([
+        ("Laying joints", lg_line(sh, T.MID, LW_HAIR)),
+        ("Plank direction", lambda x, y, w, h: sh.ax.annotate(
+            "", xy=(x + w, y + h / 2), xytext=(x, y + h / 2),
+            arrowprops=dict(arrowstyle="<|-|>", lw=LW_THIN, color=T.INK, mutation_scale=5))),
+        ("Tile joint centred on room", lambda x, y, w, h: (sh.circle(x + 3, y + h / 2, 1.1, edge=T.INK, fill=T.PAPER),
+                                                           sh.line([(x + 1.2, y + h / 2), (x + 4.8, y + h / 2)], T.INK, LW_HAIR, z=9))),
+        ("Unverified level", lg_text(sh, "FFL −20*", T.FLAG, 600)),
+    ])
+    fr.head("Floor finish schedule")
+    fr.lines(rows)
+    return sh
+
+
+# ---- wall finishes ---------------------------------------------------------------
+def edge_pieces(room, walls):
+    """Room edges split into the stretches that lie on each wall's face."""
+    from shapely.geometry import LineString as LS
+    out = []
+    for e in geom.room_edges(room, walls):
+        seg = LS([e.a, e.b])
+        ux, uy = (e.b[0] - e.a[0]) / e.length, (e.b[1] - e.a[1]) / e.length
+        for w in walls:
+            part = seg.intersection(geom.wall_polygon(w).buffer(2))
+            for g in getattr(part, "geoms", [part]):
+                if g.is_empty or g.geom_type != "LineString" or g.length < 20:
+                    continue
+                p0, p1 = g.coords[0], g.coords[-1]
+                if (p1[0] - p0[0]) * ux + (p1[1] - p0[1]) * uy < 0:
+                    p0, p1 = p1, p0
+                out.append(geom.Edge(e.n, p0, p1, g.length, e.facing, w["id"]))
+    return out
+
+
+def wf_colours(codes):
+    cyc = [TX.mix(T.MID, T.PAPER, 0.15), TX.mix(T.BLUE, T.PAPER, 0.35), TX.mix(T.GREEN, T.PAPER, 0.25),
+           TX.mix(T.AMBER, T.PAPER, 0.15), TX.mix(T.BLUE, T.INK, 0.25), TX.mix(T.GREEN, T.INK, 0.3),
+           TX.mix(T.GREY, T.PAPER, 0.1)]
+    return {c: TX.hexc(cyc[i % len(cyc)]) for i, c in enumerate(sorted(codes))}
+
+
+def _tag_box(sh, x, y, text, sub=None, z=11):
+    w = text_width_mm(text, T.SIZES["dim"], 0.62) + 2.4
+    h = 3.2
+    sh.region([([(x - w / 2, y - h / 2), (x + w / 2, y - h / 2), (x + w / 2, y + h / 2), (x - w / 2, y + h / 2)], [])],
+              fill=T.PAPER, edge=T.INK, lw=LW_HAIR, z=z)
+    sh.text(x, y + 0.05, text, sans("dim", 600), T.INK, ha="center", va="center", zorder=z + 1)
+    if sub:
+        sh.text(x, y + h / 2 + 2.0, sub, sans("dim"), T.GREY, ha="center", va="center", zorder=z + 1,
+                path_effects=sh.halo(2.0))
+
+
+def wall_finishes(m, no, total):
+    sh, fr, pv, scale = _plan_setup(m, "Wall finish plan", "Wall finishes by face · scale 1:{scale}", no, total)
+    fin, _ = _finish_maps(m)
+    codes = {r.get("wall_finish") for r in m.rooms if r.get("wall_finish")} | {w["finish"] for w in m.wall_features}
+    col = wf_colours(codes)
+    base_plan(pv, m, opening_color=T.GREY)
+    band = 1.15 * scale            # plan mm: band centre 1.15 page-mm inside the face
+    for r in m.rooms:
+        default = r.get("wall_finish")
+        feats = [wf for wf in m.wall_features if wf["room"] == r["id"]]
+        for e in edge_pieces(r, m.walls):
+            w = m.wall(e.wall)
+            ux, uy = (e.b[0] - e.a[0]) / e.length, (e.b[1] - e.a[1]) / e.length
+            nx, ny = -uy, ux                             # inward (CCW room)
+            def t_of(p):
+                return (p[0] - e.a[0]) * ux + (p[1] - e.a[1]) * uy
+            cuts = []
+            for o in m.openings_on(w["id"]):
+                t0, t1 = sorted((t_of(geom.point_on_wall(w, o["offset"])),
+                                 t_of(geom.point_on_wall(w, o["offset"] + o["width"]))))
+                cuts.append((t0, t1))
+            spans = [(0.0, e.length, default, None)]
+            for wf in feats:
+                if wf["wall"] != w["id"]:
+                    continue
+                t0, t1 = sorted((t_of(geom.point_on_wall(w, wf["offset"])),
+                                 t_of(geom.point_on_wall(w, wf["offset"] + wf["width"]))))
+                t0, t1 = max(t0, 0), min(t1, e.length)
+                if t1 - t0 < 1:
+                    continue
+                new = []
+                for a0, a1, code, src in spans:
+                    if a1 <= t0 or a0 >= t1:
+                        new.append((a0, a1, code, src))
+                        continue
+                    if a0 < t0:
+                        new.append((a0, t0, code, src))
+                    new.append((max(a0, t0), min(a1, t1), wf["finish"], wf))
+                    if a1 > t1:
+                        new.append((t1, a1, code, src))
+                spans = new
+            for a0, a1, code, src in spans:
+                pieces = [(a0, a1)]
+                for c0, c1 in cuts:
+                    nxt = []
+                    for p0, p1 in pieces:
+                        if c1 <= p0 or c0 >= p1:
+                            nxt.append((p0, p1))
+                        else:
+                            if p0 < c0:
+                                nxt.append((p0, c0))
+                            if c1 < p1:
+                                nxt.append((c1, p1))
+                    pieces = nxt
+                for p0, p1 in pieces:
+                    if p1 - p0 < 40 or not code:
+                        continue
+                    A = (e.a[0] + ux * p0 + nx * band, e.a[1] + uy * p0 + ny * band)
+                    B = (e.a[0] + ux * p1 + nx * band, e.a[1] + uy * p1 + ny * band)
+                    sh.line([pv.P(*A), pv.P(*B)], col[code], 3.2, z=6)
+                if src is not None:
+                    mid = (a0 + a1) / 2
+                    tp = (e.a[0] + ux * mid + nx * band * 4.2, e.a[1] + uy * mid + ny * band * 4.2)
+                    _tag_box(sh, *pv.P(*tp), code, f"z {src['z0']}–{src['z1']}")
+    sw = swings(m.walls, m.openings)
+    feats_zone = unary_union([Point(*geom.point_on_wall(m.wall(wf["wall"]), wf["offset"] + wf["width"] / 2)).buffer(9 * scale)
+                              for wf in m.wall_features] + [sw])
+    for r in m.rooms:
+        pv.room_label(r, [(f"walls {r.get('wall_finish') or '—'}", False, True)], avoid=feats_zone)
+    items = []
+    for c in sorted(codes):
+        items.append((f"{c}  {fin[c]['name']}", lambda x, y, w, h, c=c: sh.line(
+            [(x, y + h / 2), (x + w, y + h / 2)], col[c], 3.2)))
+    fr.legend(items)
+    fr.head("Notes")
+    fr.lines([("", "Band on each face shows its finish. Tagged faces are features, with height range "
+               "z in mm above FFL; all other faces take the room's wall finish.", None)], color=T.GREY)
+    return sh
+
+
+# ---- furniture marking -----------------------------------------------------------
+def furniture_plan(m, no, total):
+    sh, fr, pv, scale = _plan_setup(m, "Furniture plan", "Loose furniture marking · scale 1:{scale}", no, total)
+    base_plan(pv, m, wall_fill=T.POCHE, opening_color=T.GREY)
+    for j in m.joinery:
+        draw_joinery(pv, j, m.wall(j["wall"]), m.room(j["room"]), "line", label=True)
+    for f in sorted(m.furniture, key=lambda f: f.get("kind") != "rug"):
+        draw_furniture(pv, f, "line")
+    placed = []
+    r_tag = 2.1
+    for f in m.furniture:
+        cands = [(0, 0), (0.3, 0.3), (-0.3, 0.3), (0.3, -0.3), (-0.3, -0.3), (0.38, 0), (-0.38, 0), (0, 0.38), (0, -0.38)]
+        fx, fy = geom.compass_to_vec(f.get("facing", "N"))
+        rx, ry = fy, -fx
+        best = None
+        for ca, cb in cands:
+            x_ = f["at"][0] + ca * f["size"][0] * rx + cb * f["size"][1] * fx
+            y_ = f["at"][1] + ca * f["size"][0] * ry + cb * f["size"][1] * fy
+            px, py = pv.P(x_, y_)
+            if all(math.hypot(px - a, py - b) > 2 * r_tag + 0.6 for a, b in placed):
+                best = (px, py)
+                break
+        best = best or pv.P(*f["at"])
+        placed.append(best)
+        sh.circle(*best, r_tag, edge=T.INK, fill=T.PAPER, lw=LW_THIN)
+        sh.ax.patches[-1].set_zorder(10)
+        sh.text(best[0], best[1] + 0.05, f["id"], sans("dim", 600), T.INK, ha="center", va="center", zorder=11)
+    occupied = unary_union([_to_plan(f, furniture_parts(f)[0][0]) for f in m.furniture]
+                           + [geom.joinery_polygon(j, m.wall(j["wall"]), m.room(j["room"])) for j in m.joinery]
+                           + [swings(m.walls, m.openings)])
+    for r in m.rooms:
+        _caps_label(pv, r, occupied)
+    rows = [(f["id"], f"{f.get('label') or f['kind']} · {f['size'][0]}×{f['size'][1]}×{f['size'][2]} · {f['room']}", T.INK)
+            for f in m.furniture]
+    fr.legend([
+        ("Loose furniture", lg_line(sh, T.INK, LW_THIN)),
+        ("Joinery (see joinery sheets)", lg_fill(sh, T.PAPER, T.GREY)),
+        ("Item reference", lambda x, y, w, h: (sh.circle(x + 2.2, y + h / 2, r_tag, edge=T.INK, fill=T.PAPER),
+                                              sh.text(x + 2.2, y + h / 2 + 0.05, "F1", sans("dim", 600), T.INK,
+                                                      ha="center", va="center"))),
+    ])
+    fr.head("Furniture schedule  (W × D × H mm)")
+    fr.lines(rows)
+    return sh
+
+
+SHEET_DEFS = OrderedDict(
+    cover=(cover, "Cover", False),
+    contents=(contents, "Contents and room schedule", False),
+    measured=(measured, "Measured plan", True),
+    dismantling=(dismantling, "Dismantling plan", True),
+    partitions=(partitions, "Partition plan", True),
+    presentation=(presentation, "Presentation plan", True),
+    flooring=(flooring, "Flooring plan", True),
+    wall_finishes=(wall_finishes, "Wall finish plan", True),
+    furniture=(furniture_plan, "Furniture plan", True),
+)
+SHEETS = OrderedDict((k, v[0]) for k, v in SHEET_DEFS.items())
