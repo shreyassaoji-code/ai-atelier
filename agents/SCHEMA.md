@@ -60,8 +60,8 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `wall_features[]` | object | `id`, `room`, `wall`, `offset`, `width`, `z0`, `z1`, `kind`, `finish` |
 | `floors[]` | object | `room`, `finish`, `pattern`, `module` `[w, l]` (plank or tile; mm), `start`, `skirting` (height), `angle` (optional, degrees anticlockwise from east; planks run along it) |
 | `finishes[]` | object | `code` (`FL-n` floors, `WFn` walls, `MBn` joinery boards, `WTn` worktops), `kind`, `name`, `maker`, `ref` (catalogue code). No colour values: material tones are mixed from `atelier/theme.py` tokens by `atelier/texture.py`. |
-| `views[]` | object | `id`, `kind`, `room` (optional), `wall` (elevations), `scale` (e.g. 25 for 1:25), `title`; sections also `line` `[[x, y], [x, y]]` (cut line) and `look` (`N` `E` `S` `W`: direction the viewer looks); elevations `room` + `wall` (the face of that wall in that room) |
-| `cameras[]` | object | `id`, `room`, `eye` `[x,y,z]`, `target` `[x,y,z]`, `lens` (mm, 35 mm equivalent) |
+| `views[]` | object | `id`, `kind`, `room` (optional), `wall` (elevations), `scale` (e.g. 25 for 1:25), `title`; sections also `line` `[[x, y], [x, y]]` (cut line) and `look` (`N` `E` `S` `W`: direction the viewer looks); elevations `room` + `wall` (the face of that wall in that room); room boards `room` + optional `walls` `[id, id]` (the two key elevations; omit to let STANDARDS RB2a.4 choose) |
+| `cameras[]` | object | `id`, `room`, `eye` `[x,y,z]`, `target` `[x,y,z]`, `lens` (mm, 35 mm equivalent). Room boards use up to three per room before the corner rule (STANDARDS RB2a.6); give `target` z = `eye` z for a level view. |
 | `notes[]` | object | `id`, `applies` (`"all"`, room id or view id), `text` |
 
 **Merge** (`atelier/model.py`): survey walls − `demolish` + `new_walls`; survey openings − openings on removed wall parts − demolished openings + `new_openings`; survey rooms updated or extended by design `rooms`.

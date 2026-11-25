@@ -55,6 +55,29 @@ def palette():
     }
 
 
+def finish_tone(f: dict) -> np.ndarray:
+    """One flat tone for a finish (swatch fallback, render base colour). Rules, not per-code colours."""
+    pal = palette()
+    kind, name = f.get("kind", ""), (f.get("name") or "").lower()
+    if kind == "paint":
+        return mix(T.LIGHT, T.AMBER, 0.12) if "lime" in name else mix(T.PAPER, T.LIGHT, 0.12)
+    if kind in ("wood", "veneer"):
+        return pal["oak"]
+    if kind == "fabric":
+        return pal["fabric"]
+    if kind == "laminate":
+        return pal["joinery"]
+    if kind == "metal":
+        return pal["metal"]
+    if kind == "stone":
+        return pal["marble"] if "marble" in name else pal["worktop"] if "quartz" in name else pal["stone"]
+    if kind in ("tile",):
+        return pal["stone"]
+    if kind in ("glass", "mirror"):
+        return mix(T.BLUE, T.PAPER, 0.8)
+    return mix(T.PAPER, T.LIGHT, 0.3)
+
+
 def hexc(c) -> str:
     """rgb array -> matplotlib colour string (runtime value, not a literal)."""
     r, g, b = (np.clip(c, 0, 1) * 255).round().astype(int)

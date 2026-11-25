@@ -2,7 +2,7 @@
 
     python -m atelier.build projects/sample                      # all sheets + album
     python -m atelier.build projects/sample --sheet measured     # one sheet
-    --norender  skips 3D renders (none are wired in yet)
+    --norender  skips 3D renders (room boards then show only renders already cached)
 
 Sheets are listed in projects/<name>/project.json ("sheets": [...]) and
 defined in atelier/sheets.py. Data must pass atelier.validate first.
@@ -48,6 +48,11 @@ def main(argv=None):
     def info(n):
         if n.startswith("elevation:"):
             return (f"Elevation {n.split(':', 1)[1]}", "1:25")
+        if n.startswith("room:"):
+            from atelier.room_board import layout
+            from atelier.views3d import key_walls
+            r = m.room(n.split(":", 1)[1])
+            return (f"Room board · {r.get('name', r['id'])}", f"1:{layout(m, r, key_walls(m, r))['scale']} / 1:50")
         if n.startswith("joinery:"):
             from atelier.boards import Item, choose_layout, jn_number
             jid = n.split(":", 1)[1]
@@ -55,6 +60,9 @@ def main(argv=None):
             return (f"Joinery board {jn_number(m, jid)} · {jid}", f"1:{sc_}")
         return (SHEET_DEFS[n][1], f"1:{sc}" if SHEET_DEFS[n][2] else "—")
     m.album = [(i, n, *info(n)) for i, n in enumerate(names, 1)]
+    if any(n.startswith("room:") for n in names) and not a.norender:
+        from atelier.render import render
+        render(a.project)                        # cached: only cameras whose data changed are rendered
     out = a.project / "out" / "sheets"
     built = []
     for i, name in enumerate(names, 1):
@@ -63,6 +71,9 @@ def main(argv=None):
         if name.startswith("elevation:"):
             from atelier.elev_detail import elevation_sheet
             sh = elevation_sheet(m, i, len(names), name.split(":", 1)[1])
+        elif name.startswith("room:"):
+            from atelier.room_board import board as room_board
+            sh = room_board(m, i, len(names), name.split(":", 1)[1])
         elif name.startswith("joinery:"):
             from atelier.boards import board
             sh = board(m, i, len(names), name.split(":", 1)[1])

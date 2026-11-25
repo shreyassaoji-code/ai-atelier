@@ -75,6 +75,21 @@ Font files live in `fonts/`. Code finds them by the family name stored inside ea
 - Presentation plan: procedural floor per room from `floors[]` + `finishes[]`; soft shadows offset to the bottom-right; furniture in fills; room names in tracked caps with area; no dimensions; legend shows floor swatches.
 - Code sheets: flooring `FL-n` (laying joints, direction arrow for planks, joint-centre mark for tiles), wall finishes `WFn` (a band on every face, tags with z range for features), furniture `Fn` (outlines, circled tags, W × D × H schedule).
 
+## 2a. Room boards (RB sheets)
+
+Source: brief of 2026-11-25. **(default)** = Atelier default, not from the brief.
+
+| Rule | Requirement (tick or fail) |
+|---|---|
+| RB2a.1 | One board per room of type `bedroom`, `master_bedroom`, `living`, `living_dining`, `kitchen`; listed in project.json as `room:<id>`. |
+| RB2a.2 | Room plan cropped to the room: clipped to the room polygon plus the bodies of its own walls, nothing from a neighbouring room; scale the largest of **1:40 / 1:50 / 1:60 / 1:75** that fits. Floor texture, furniture with `F` tags, joinery, doors. |
+| RB2a.3 | Plan chains: corners and opening jambs on every side; overall on S and W (omitted where it repeats tier 1). Elevation markers 1 and 2 (number in a circle, pointer at the wall), clear of furniture, joinery and camera marks. |
+| RB2a.4 | Two key elevations at **1:50**, from `views[]` kind `room_board` (`walls: [id, id]`) when given, otherwise by rule: a wall's content = joinery length ×3/m + feature area ×1.5/m² + windows ×1.2 + openings ×0.6 + furniture within **700** **(default)**; the two highest. **Never a blank wall** (no joinery, feature, opening or furniture): the board fails instead. **Kitchen: elevation 1 is the wall with the most joinery.** |
+| RB2a.5 | Each elevation: CAPS call-outs on leaders in a column left of it (wall finish, features, joinery with board/worktop codes, joinery seen end-on, false ceiling, cove, dome, floor); level markers right of it (FFL, FCL, tray, dome, soffit; flagged with `*`); furniture against the wall as silhouettes; one chain (corners, openings, joinery) summing to the face length. |
+| RB2a.6 | Three round 3D vignettes A–C from `atelier/render.py`: ONE model of the whole apartment from the data; cameras from `cameras[]` first, else the best convex corners **(default: eye 1350, lens 20 mm, level so verticals stay vertical)**, each looking a different way; camera marks with view cones on the plan. A missing or out-of-date render is drawn as an empty circle marked RENDER NOT PRODUCED, never as a placeholder picture. |
+| RB2a.7 | Palette circles with codes (floor, walls, features, joinery board and worktop); legend: room data (area, floor, skirting, walls, features, ceiling levels, soffit, each opening, joinery, light counts; flagged values with `*`) and furniture grouped by type with W×D×H. |
+| RB2a.8 | Layout: [plan \| elevations] over a row of vignettes; else [plan \| vignettes] over the elevations; else plan over [elevations \| vignette column]. If none fits at 1:75 the build fails. |
+
 ## 3. Ceilings
 
 Source: brief of 2026-11-25. Values marked **(default)** are Atelier defaults, not from the brief; confirm per project.
