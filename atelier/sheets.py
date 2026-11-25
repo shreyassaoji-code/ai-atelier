@@ -935,10 +935,3 @@ SHEET_DEFS = OrderedDict(
     wall_finishes=(wall_finishes, "Wall finish plan", True),
     furniture=(furniture_plan, "Furniture plan", True),
 )
-from atelier import sheets_services as _svc  # noqa: E402  (defined after this module's names exist)
-
-SHEET_DEFS.update(_svc.SHEET_DEFS)
-from atelier import sheets_ceiling as _ceil  # noqa: E402
-
-SHEET_DEFS.update(_ceil.SHEET_DEFS)
-SHEETS = OrderedDict((k, v[0]) for k, v in SHEET_DEFS.items())

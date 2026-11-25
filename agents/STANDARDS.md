@@ -110,8 +110,18 @@ Source: brief of 2026-11-25. No reference sheet received yet: layout to be match
 | E5.9 | Level markers in metres: `FFL ±0.000`, `FCL +x.xxx`, `SOFFIT +x.xxx` (flagged with `*` when unverified). |
 | E5.10 | Skirting drawn **only** on bare wall (not behind joinery, not across openings), at the floor's `skirting` height. |
 | E5.11 | Walls cut at both ends in poche, at their real thickness. |
-| E5.12 | Detail bubbles: 1 worktop/backsplash, 2 plinth, 3 sink → **DT-01**; 4 window sill, 5 shutter edge, 6 ceiling junction → **DT-02**. |
+| E5.12 | Detail bubbles, only where the element is on that wall: **1** cove (room has a cove step), **2** wall panel with LED reveal (panelling/fluted feature), **3** skirting (bare wall) → **DT-01**; **4** concealed flush door (door opening), **5** worktop + gola + base unit (kitchen base / vanity), **6** wardrobe section (wardrobe) → **DT-02**. |
 | E5.13 | Chains: a vertical level chain, a horizontal module chain and an overall dimension; a room key plan marking the wall and view direction; a points schedule (id, type, height, x). |
+
+### 5a. Details (DT sheets)
+
+| Rule | Requirement (tick or fail) |
+|---|---|
+| D5a.1 | **DT-01**: 1 cove (1:5), 2 wall panel with LED reveal (1:5), 3 skirting (1:5). **DT-02**: 4 concealed flush door (1:5), 5 worktop + gola + base unit (1:10), 6 wardrobe section (1:10). |
+| D5a.2 | Each detail is titled by its bubble (number over sheet), a CAPS title and its scale; numbers match the elevation bubbles (E5.12). |
+| D5a.3 | Every material is hatched from one table (concrete, brick, plaster, gypsum, ply, MDF, timber, veneer/laminate, quartz/stone, tile, aluminium, steel); each sheet carries a material key. |
+| D5a.4 | Every layer is dimensioned in mm; labels are CAPS on leaders, in a column beside the detail. |
+| D5a.5 | Sizes come from the data where it has them (cove levels, skirting height, door width and wall, joinery height/depth/rows, worktop and board codes, ceiling level over a wardrobe); the rest are **(default)**: plaster 12, brick 115, timber ground 25 × 50 @ 450, panel 18, LED reveal 20, door leaf 40, shadow gap 3, carcass 18, back 6, plinth recess 60, gola 30 × 50, floor bed 30. |
 
 ## 6. Engineering defaults (services)
 

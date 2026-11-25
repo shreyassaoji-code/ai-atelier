@@ -485,7 +485,8 @@
         }
       ],
       "finish": "MB1",
-      "worktop": "WT1"
+      "worktop": "WT1",
+      "handles": "gola"
     },
     {
       "id": "J4",
@@ -517,7 +518,8 @@
         }
       ],
       "finish": "MB1",
-      "worktop": "WT1"
+      "worktop": "WT1",
+      "handles": "gola"
     },
     {
       "id": "J5",
@@ -556,7 +558,8 @@
             }
           ]
         }
-      ]
+      ],
+      "finish": "MB1"
     },
     {
       "id": "J6",
@@ -599,7 +602,8 @@
             }
           ]
         }
-      ]
+      ],
+      "finish": "MB1"
     },
     {
       "id": "J7",

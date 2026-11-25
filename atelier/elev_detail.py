@@ -21,7 +21,7 @@ from atelier.sheets_services import load_services
 
 S = 25                                       # 1:25
 # STANDARDS E5.2 / E5.7 defaults (the only place these numbers live)
-D = dict(plinth=100, worktop=40, drawer_top=180, gap=3, slab=150, floor_slab=100,
+D = dict(plinth=100, worktop=40, drawer_top=180, gap=3, slab=150, floor_slab=100, gola_h=50,
          plate={"socket": (86, 86, "6A"), "worktop_socket": (86, 86, "16A"), "double_socket": (146, 86, "6A×2"),
                 "socket_usb": (86, 86, "USB"), "lan": (86, 86, "DATA"), "tv_power": (146, 86, "TV"),
                 "ip44_socket": (100, 110, "IP44"), "wm_socket": (100, 110, "16A IP44"),
@@ -153,7 +153,7 @@ def _handle_v(E, x, za, zb):
     E.line([(x, za), (x, zb)], T.INK, LW_LINE, z=6)
 
 
-def _module(E, md, z0, z1, label, idx):
+def _module(E, md, z0, z1, label, idx, gola=False):
     """One joinery module front between z0 and z1."""
     xa, xb = md["xa"], md["xb"]
     g = D["gap"]
@@ -165,20 +165,23 @@ def _module(E, md, z0, z1, label, idx):
         cuts = [z1 - top, z0 + (z1 - top - z0) / 2]
         for c in cuts:
             E.line([(xa + g, c), (xb - g, c)], T.INK, LW_THIN, z=6)
-        for zt in (z1, cuts[0], cuts[1]):
-            E.line([(xa + w * 0.38, zt - 45), (xb - w * 0.38, zt - 45)], T.INK, LW_LINE, z=6)
+        if not gola:
+            for zt in (z1, cuts[0], cuts[1]):
+                E.line([(xa + w * 0.38, zt - 45), (xb - w * 0.38, zt - 45)], T.INK, LW_LINE, z=6)
     elif ty in ("shutter", "loft", "glass_shutter"):
         hinge_left = idx % 2 == 0
         _swing(E, xa + g, xb - g, z0 + g, z1 - g, hinge_left)
         hx = xb - 60 if hinge_left else xa + 60
-        _handle_v(E, hx, z1 - 60, z1 - 200) if ty != "loft" else _handle_v(E, hx, z0 + 60, z0 + 200)
+        if not gola:
+            _handle_v(E, hx, z1 - 60, z1 - 200) if ty != "loft" else _handle_v(E, hx, z0 + 60, z0 + 200)
     elif ty == "sink":
         mid = (xa + xb) / 2
         E.line([(mid, z0 + g), (mid, z1 - g)], T.INK, LW_THIN, z=6)
         _swing(E, xa + g, mid - 1, z0 + g, z1 - g, True)
         _swing(E, mid + 1, xb - g, z0 + g, z1 - g, False)
-        _handle_v(E, mid - 50, z1 - 60, z1 - 200)
-        _handle_v(E, mid + 50, z1 - 60, z1 - 200)
+        if not gola:
+            _handle_v(E, mid - 50, z1 - 60, z1 - 200)
+            _handle_v(E, mid + 50, z1 - 60, z1 - 200)
     elif ty == "hob":
         for k in range(4):
             cx = xa + w * (0.2 + 0.2 * k)
@@ -309,6 +312,7 @@ def draw_elevation(sh, m, view, ex0, ey0):
 
     # skirting only on bare wall (E5.10)
     sk = floor.get("skirting", 0)
+    bare = []
     if sk:
         bare = [(0.0, L)]
         for blk in [(j["xa"], j["xb"]) for j in J] + [(o["xa"], o["xb"]) for o in O
@@ -338,8 +342,14 @@ def draw_elevation(sh, m, view, ex0, ey0):
         top = r1 - (D["worktop"] if base else 0)
         E.rect(jj["xa"], jj["xb"], 0, D["plinth"], fill=TX.hexc(TX.mix(T.MID, T.PAPER, 0.4)), edge=T.INK,
                lw=LW_HAIR, z=4)
+        gola = j.get("handles") == "gola"
+        front_top = top - (D["gola_h"] if gola else 0)
+        if gola:                                       # continuous aluminium gola recess under the worktop
+            E.rect(jj["xa"], jj["xb"], front_top, top, fill=T.MID, edge=T.INK, lw=LW_HAIR, z=5)
+            E.line([(jj["xa"], front_top + D["gola_h"] * 0.55), (jj["xb"], front_top + D["gola_h"] * 0.55)],
+                   T.INK, LW_HAIR, z=6)
         for k, md in enumerate(jj["mods"]):
-            _module(E, md, D["plinth"], top, f"{j['id']}.{md['n']}", k)
+            _module(E, md, D["plinth"], front_top, f"{j['id']}.{md['n']}", k, gola)
             if md.get("type") == "sink":
                 sink_x.append((md["xa"] + md["xb"]) / 2)
                 E.rect(md["xa"] + 0.15 * (md["xb"] - md["xa"]), md["xb"] - 0.15 * (md["xb"] - md["xa"]),
@@ -512,23 +522,29 @@ def draw_elevation(sh, m, view, ex0, ey0):
         short = name.split(",")[0]
         sh.text(xt, ty + 3.6, short[:30], sans("dim"), T.GREY, va="center", zorder=12)
 
-    # detail bubbles (E5.12)
+    # detail bubbles (E5.12): only where the element is on this wall
     targets = {}
-    if J:
-        jj = J[0]
-        wt = jj["j"]["rows"][0]["height"]
-        targets[1] = (jj["xa"] + 300, wt)
-        targets[2] = (jj["xb"] - 250, D["plinth"] / 2)
-        if sink_x:
-            targets[3] = (sink_x[0], wt - 120)
-        sh_mod = next((md for md in jj["mods"] if md.get("type") == "shutter"), None)
-        if sh_mod:
-            targets[5] = (sh_mod["xa"] + 10, 450)
-    win = next((o for o in O if o["kind"] in ("window", "ventilator")), None)
-    if win:
-        targets[4] = ((win["xa"] + win["xb"]) / 2 + 150, win.get("sill", 900))
-    targets[6] = (L * 0.82, top_fc)
-    offs = {1: (-6, -17), 2: (9, -9), 3: (9, -14), 4: (11, -7), 5: (-9, 6), 6: (7, -8)}
+    cdef = next((c for c in m.ceilings if c["room"] == F.room["id"]), None)
+    if cdef and any(st_.get("light") == "cove" for st_ in cdef.get("steps", [])) and F.fcl:
+        targets[1] = (L * 0.30, F.fcl)
+    pan = next((wf for wf in FW if wf.get("kind") in ("panelling", "fluted")), None)
+    if pan:
+        targets[2] = ((pan["xa"] + pan["xb"]) / 2, (pan["z0"] + pan["z1"]) / 2)
+    if sk and bare:
+        a_, b_ = max(bare, key=lambda t: t[1] - t[0])
+        if b_ - a_ > 20:
+            targets[3] = ((a_ + b_) / 2, sk / 2)
+    door = next((o for o in O if o["kind"] in ("door", "double_door")), None)
+    if door:
+        targets[4] = (door["xa"] + 20, 1000)
+    base_j = next((jj for jj in J if jj["j"].get("kind") in ("kitchen_base", "vanity")), None)
+    if base_j:
+        wt = base_j["j"]["rows"][0]["height"]
+        targets[5] = (base_j["xa"] + 0.25 * (base_j["xb"] - base_j["xa"]), wt - 25)
+    ward = next((jj for jj in J if jj["j"].get("kind") == "wardrobe"), None)
+    if ward:
+        targets[6] = ((ward["xa"] + ward["xb"]) / 2, 1200)
+    offs = {1: (7, -9), 2: (-9, -10), 3: (8, -9), 4: (-9, -9), 5: (-7, -16), 6: (9, -10)}
     for n, (x, z) in sorted(targets.items()):
         tx, tz = E.X(x), E.Z(z)
         ox, oy = offs[n]
@@ -639,7 +655,7 @@ def elevation_sheet(m, no, total, view_id):
                                                                 LW_HAIR))),
     ])
     fr.head("Detail references")
-    fr.lines([("1–3", "DT-01: worktop / backsplash, plinth, sink", None),
-              ("4–6", "DT-02: window sill, shutter edge, ceiling junction", None),
+    fr.lines([("1–3", "DT-01: 1 cove, 2 wall panel with LED reveal, 3 skirting", None),
+              ("4–6", "DT-02: 4 concealed flush door, 5 worktop + gola + base unit, 6 wardrobe", None),
               ("", "Heights are mm above FFL to the device centre; x from the left corner.", None)], indent=9)
     return sh

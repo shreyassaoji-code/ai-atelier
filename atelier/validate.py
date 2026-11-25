@@ -183,6 +183,8 @@ def check(m: Model) -> Report:
             for md in row.get("modules", []):
                 if md.get("type") not in MODULE_TYPES:
                     R.E("E-ENUM", f"joinery {j['id']} row {n}: module type {md.get('type')!r}")
+        if j.get("handles", "bar") not in ("bar", "knob", "gola", "push"):
+            R.E("E-ENUM", f"joinery {j['id']}: handles {j.get('handles')!r}")
         if j.get("rows") and "height" in j:
             h = sum(r["height"] for r in j["rows"])
             if h != j["height"]:

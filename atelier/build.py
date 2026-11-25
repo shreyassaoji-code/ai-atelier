@@ -18,7 +18,8 @@ from pypdf import PdfWriter
 
 from atelier.model import load
 from atelier.draw import envelope_bounds
-from atelier.sheets import SHEET_DEFS, SHEETS, fit_scale
+from atelier.registry import SHEET_DEFS, SHEETS
+from atelier.sheets import fit_scale
 from atelier.validate import check
 
 
