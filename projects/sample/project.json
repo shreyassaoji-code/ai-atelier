@@ -1,35 +1,4 @@
 {
-  "sheets": [
-    "cover",
-    "contents",
-    "measured",
-    "dismantling",
-    "partitions",
-    "presentation",
-    "flooring",
-    "wall_finishes",
-    "furniture",
-    "room:LD",
-    "room:KIT",
-    "room:MBR",
-    "room:BR2",
-    "ceiling",
-    "sections",
-    "elevation:E-KIT-1",
-    "dt01",
-    "dt02",
-    "joinery:J1",
-    "joinery:J2",
-    "joinery:J3",
-    "joinery:J4",
-    "joinery:J5",
-    "joinery:J6",
-    "joinery:J7",
-    "joinery:J8",
-    "power",
-    "lighting",
-    "switching",
-    "plumbing",
-    "ac"
-  ]
+  "note": "Sheet order comes from agents/STANDARDS.md §2 (atelier/album.py). List page names here to leave them out, e.g. \"dt02\" or \"joinery:*\".",
+  "exclude": []
 }

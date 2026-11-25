@@ -606,7 +606,9 @@ def contents(m, no, total):
     x0, y0, x1, y1 = T.DRAW
     sh.caps(x0, y0 + 8, "Sheet index", T.INK, role="legend_head", weight=600)
     rows = [[(f"{i:02d}", "id"), title, sc] for i, _n, title, sc in m.album]
-    _table(sh, x0, y0 + 18, [(12, "left"), (62, "left"), (20, "right")], ["No", "Title", "Scale"], rows)
+    pitch = min(4.6, (y1 + 2 - (y0 + 18 + 1.6)) / max(len(rows), 1))     # a long album tightens the rows
+    _table(sh, x0, y0 + 18, [(12, "left"), (62, "left"), (20, "right")], ["No", "Title", "Scale"], rows,
+           row_h=pitch)
     fin, flo = _finish_maps(m)
     tx = x0 + 112
     sh.caps(tx, y0 + 8, "Room schedule", T.INK, role="legend_head", weight=600)

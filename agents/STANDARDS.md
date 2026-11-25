@@ -75,6 +75,42 @@ Font files live in `fonts/`. Code finds them by the family name stored inside ea
 - Presentation plan: procedural floor per room from `floors[]` + `finishes[]`; soft shadows offset to the bottom-right; furniture in fills; room names in tracked caps with area; no dimensions; legend shows floor swatches.
 - Code sheets: flooring `FL-n` (laying joints, direction arrow for planks, joint-centre mark for tiles), wall finishes `WFn` (a band on every face, tags with z range for features), furniture `Fn` (outlines, circled tags, W × D × H schedule).
 
+## 2. Album structure
+
+Source: brief of 2026-11-25. The order is kept in `atelier/album.py` (`ORDER`); `tests/test_album.py` fails if this table and the code disagree. Families (`room:`, `elevation:`, `joinery:`) give one page per item, in data order.
+
+| # | Key | Sheet | One page per |
+|---|---|---|---|
+| 1 | `cover` | Cover | album |
+| 2 | `contents` | Contents and room schedule | album |
+| 3 | `measured` | Measured plan | album |
+| 4 | `dismantling` | Dismantling plan | album |
+| 5 | `partitions` | Partition plan | album |
+| 6 | `presentation` | Presentation plan | album |
+| 7 | `furniture` | Furniture plan | album |
+| 8 | `room:*` | Room boards (§2a) | bedroom, living, kitchen |
+| 9 | `flooring` | Flooring plan | album |
+| 10 | `wall_finishes` | Wall finish plan | album |
+| 11 | `ceiling` | Ceiling plan | album |
+| 12 | `sections` | Ceiling sections | album |
+| 13 | `power` | Power plan | album |
+| 14 | `lighting` | Lighting plan | album |
+| 15 | `switching` | Switching plan | album |
+| 16 | `plumbing` | Plumbing plan | album |
+| 17 | `ac` | Air-conditioning plan | album |
+| 18 | `elevation:*` | Elevations (§5) | `views[]` of kind `elevation` |
+| 19 | `dt01` | Details DT-01 (§5a) | album |
+| 20 | `dt02` | Details DT-02 (§5a) | album |
+| 21 | `joinery:*` | Joinery boards (§5b) | `joinery[]` item |
+
+| Rule | Requirement (tick or fail) |
+|---|---|
+| A2.1 | Pages follow the table above; `project.json → exclude` may only leave pages out, never reorder them. |
+| A2.2 | Every page is numbered `NN / NN` (page / total) and the contents sheet lists every page with its title and scale. |
+| A2.3 | `out/album.pdf` is vector, A3 landscape, one page per sheet; `out/pages/NN.png` is the preview of page NN. |
+| A2.4 | `album.pdf` is replaced only by a complete build in which every page was made and the merged file checked (page count, A3). A partial build splices its pages into an album made from the same page list, or leaves `album.pdf` untouched. A build never leaves `album.pdf` with fewer pages than its page list. |
+| A2.5 | `python -m atelier.build projects/` runs validate → services → 3D → album for every project; `--no-render` skips 3D. |
+
 ## 2a. Room boards (RB sheets)
 
 Source: brief of 2026-11-25. **(default)** = Atelier default, not from the brief.
