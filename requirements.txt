@@ -1,0 +1,6 @@
+shapely
+matplotlib
+pypdf
+pillow
+numpy
+bpy
