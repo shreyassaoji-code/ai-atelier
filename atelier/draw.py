@@ -168,8 +168,9 @@ class Sheet:
         from matplotlib import patheffects
         return [patheffects.withStroke(linewidth=width, foreground=T.PAPER)]
 
-    def circle(self, x, y, r, edge=None, fill=None, lw=LW_THIN):
-        self.ax.add_patch(Circle((x, y), r, facecolor=fill or "none", edgecolor=edge or T.INK, lw=lw))
+    def circle(self, x, y, r, edge=None, fill=None, lw=LW_THIN, z=None):
+        kw = {} if z is None else {"zorder": z}
+        self.ax.add_patch(Circle((x, y), r, facecolor=fill or "none", edgecolor=edge or T.INK, lw=lw, **kw))
 
     def save(self, pdf: Path | None = None, png: Path | None = None, dpi: int = 200):
         for p in (pdf, png):

@@ -48,6 +48,11 @@ def main(argv=None):
     def info(n):
         if n.startswith("elevation:"):
             return (f"Elevation {n.split(':', 1)[1]}", "1:25")
+        if n.startswith("joinery:"):
+            from atelier.boards import Item, choose_layout, jn_number
+            jid = n.split(":", 1)[1]
+            sc_ = choose_layout(Item(m, next(j for j in m.joinery if j["id"] == jid)))[0]
+            return (f"Joinery board {jn_number(m, jid)} · {jid}", f"1:{sc_}")
         return (SHEET_DEFS[n][1], f"1:{sc}" if SHEET_DEFS[n][2] else "—")
     m.album = [(i, n, *info(n)) for i, n in enumerate(names, 1)]
     out = a.project / "out" / "sheets"
@@ -58,6 +63,9 @@ def main(argv=None):
         if name.startswith("elevation:"):
             from atelier.elev_detail import elevation_sheet
             sh = elevation_sheet(m, i, len(names), name.split(":", 1)[1])
+        elif name.startswith("joinery:"):
+            from atelier.boards import board
+            sh = board(m, i, len(names), name.split(":", 1)[1])
         else:
             sh = SHEETS[name](m, i, len(names))
         safe = name.replace(":", "-")

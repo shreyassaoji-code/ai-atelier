@@ -123,6 +123,19 @@ Source: brief of 2026-11-25. No reference sheet received yet: layout to be match
 | D5a.4 | Every layer is dimensioned in mm; labels are CAPS on leaders, in a column beside the detail. |
 | D5a.5 | Sizes come from the data where it has them (cove levels, skirting height, door width and wall, joinery height/depth/rows, worktop and board codes, ceiling level over a wardrobe); the rest are **(default)**: plaster 12, brick 115, timber ground 25 × 50 @ 450, panel 18, LED reveal 20, door leaf 40, shadow gap 3, carcass 18, back 6, plinth recess 60, gola 30 × 50, floor bed 30. |
 
+### 5b. Joinery boards (JN sheets)
+
+| Rule | Requirement (tick or fail) |
+|---|---|
+| JB5b.1 | One board per `joinery[]` item, numbered `JN-01…` in data order, titled with the item id, kind and room. |
+| JB5b.2 | Key plan with the item filled and an arrow giving the front-elevation view direction. |
+| JB5b.3 | Plan: worktop items show the worktop with cut-outs (sink bowl + tap hole Ø35, hob cut-out 560 × 490 **(default)**); other items show door swings and drawer pull-outs. |
+| JB5b.4 | Front elevation: modules numbered `J<n>.<m>`, handles or gola as in `handles`, appliances (hob, sink) drawn; module chain, overall width and a height chain. |
+| JB5b.5 | Internal elevation with doors removed **(default fit)**: shutter → shelves @ 350; drawer → 3 drawer boxes; sink → bowl, trap, C/D points; hob → hob body + 2 drawers; loft → 1 shelf; open → shelves; wardrobe modules alternate hanging (rail 50 below the shelf, shelf at the row top − 300) and shelves @ 350 with 2 drawers. |
+| JB5b.6 | Swatch circles for every finish code on the item (board `MBn`, worktop `WTn`) and its handles. |
+| JB5b.7 | Panels: materials (code, name), modules (number, type, width, internal fit), notes. |
+| JB5b.8 | Σ module widths = run length, per row; the board prints the check and fails the build if it does not hold. |
+
 ## 6. Engineering defaults (services)
 
 `python -m atelier.services projects/` writes `projects/<name>/services.json` from these rules, then applies `services_overrides.json`. Every generated item carries `"rule": "R6.n"`. Heights `hNNN` are mm from FFL to the centre of the device unless stated. Source: brief of 2026-11-25. Values marked **(default)** were not in the brief; they are Atelier defaults and must be confirmed.
