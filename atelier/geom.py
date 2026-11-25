@@ -144,6 +144,37 @@ def label_point(room):
     return c if depth(c) >= 0.9 * depth(pole) else pole
 
 
+def step_polygon(room, step):
+    """Area of a ceiling step: `poly` (partial tray) or the room polygon inset by `inset`."""
+    if step.get("poly"):
+        return orient(Polygon(step["poly"]))
+    g = room_polygon(room).buffer(-step.get("inset", 500), join_style=2)
+    if g.is_empty:
+        return g
+    return max(getattr(g, "geoms", [g]), key=lambda p: p.area)
+
+
+def dome_polygon(dome):
+    return Point(dome["at"]).buffer(dome["d"] / 2, 64)
+
+
+def ceiling_z_at(room, cdef, p):
+    """False-ceiling level (mm above FFL) at plan point p, from band, steps and domes."""
+    pt = Point(p)
+    z = cdef.get("z")
+    for s in cdef.get("steps", []):
+        sp = step_polygon(room, s)
+        if not sp.is_empty and sp.buffer(0.01).contains(pt):
+            z = s["z"]
+    for d in cdef.get("domes", []):
+        r = d["d"] / 2
+        dist = pt.distance(Point(d["at"]))
+        if dist < r:
+            base = z
+            z = base + (d["z"] - base) * (1 - (dist / r) ** 2) ** 0.5
+    return z
+
+
 def room_area_m2(room) -> float:
     return room_polygon(room).area / 1e6
 

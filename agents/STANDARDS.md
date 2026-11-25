@@ -75,6 +75,24 @@ Font files live in `fonts/`. Code finds them by the family name stored inside ea
 - Presentation plan: procedural floor per room from `floors[]` + `finishes[]`; soft shadows offset to the bottom-right; furniture in fills; room names in tracked caps with area; no dimensions; legend shows floor swatches.
 - Code sheets: flooring `FL-n` (laying joints, direction arrow for planks, joint-centre mark for tiles), wall finishes `WFn` (a band on every face, tags with z range for features), furniture `Fn` (outlines, circled tags, W × D × H schedule).
 
+## 3. Ceilings
+
+Source: brief of 2026-11-25. Values marked **(default)** are Atelier defaults, not from the brief; confirm per project.
+
+| Rule | Requirement (tick or fail) |
+|---|---|
+| C3.1 | Ceiling plan shows every tray outline (steps, partial trays) and every dome, drawn from `design.json → ceilings[]`. |
+| C3.2 | One level tag per area: band `+zzzz`, each step `+zzzz`, the innermost step tagged `core +zzzz`; domes tagged `dome +apex`. Levels are mm above FFL. |
+| C3.3 | Every room with steps has a dimension chain across it in x and in y, through the core: wall face → each step edge → wall face. |
+| C3.4 | Every room with 2+ downlights has a chain giving the downlight spacing in x and in y, from the wall faces. |
+| C3.5 | Notes with leaders: `GYPSUM FALSE CEILING` per room with a false ceiling; `PROVISION FOR COVE LIGHT` per cove; `MAGNETIC TRACK` per track; `LINEAR SLOT DIFFUSER` per AC supply grille. |
+| C3.6 | Fittings: downlights, pendants, tracks, domes with diameter `Ø…`, fans drawn at their true sweep (1200) centred, AC supply and return diffusers. |
+| C3.7 | Section marks `A–A`, `B–B` from `views[]` (kind `section`): cut line, letter at both ends, arrow in the `look` direction. |
+| C3.8 | Sections sheet: each section at the plan scale with walls cut, floor, false ceiling profile and slab; a vertical chain giving **every** level in it (FFL 0, each ceiling level, dome apex, slab soffit) plus level tags. |
+| C3.9 | A **1:5** cove detail: RCC slab, suspension rod, GI channel, 12.5 gypsum board, upstand lip, aluminium LED profile with diffuser; dimensioned trough and step heights. |
+| C3.10 | Cove geometry **(default)**: trough **150** wide on the raised side of the step edge; upstand **75** or half the step, whichever is less; board **12.5**; GI ceiling section @ **450** c/c; rods @ **1200** c/c; slab **150**; LED **24 V, 2700 K** in aluminium profile with opal diffuser. |
+| C3.11 | The slab soffit comes from `levels.soffit`; when flagged it prints with `*` on both sheets. |
+
 ## 6. Engineering defaults (services)
 
 `python -m atelier.services projects/` writes `projects/<name>/services.json` from these rules, then applies `services_overrides.json`. Every generated item carries `"rule": "R6.n"`. Heights `hNNN` are mm from FFL to the centre of the device unless stated. Source: brief of 2026-11-25. Values marked **(default)** were not in the brief; they are Atelier defaults and must be confirmed.
@@ -92,7 +110,7 @@ Font files live in `fonts/`. Code finds them by the family name stored inside ea
 | R6.9 | Main entry: DB at **h1500** **(default)** on the hinge side, **400** from the jamb; VDP at **h1400** **(default)** on the latch side beyond the switch; router at **h2100** **(default)** beside the DB. |
 | R6.10 | AC in living and bedrooms: **ducted** if the room has a feature wall **and** a stepped (tray) ceiling; otherwise **split**. Split: indoor unit top at **h2150** **(default)** on the face opposite the feature wall (or the longest external face), centred on its longest free stretch; outdoor unit outside the nearest external wall. Ducted: unit in the ceiling drop next to an external wall, linear supply along the step, return grille by the unit. AC isolator at **h2200** **(default)** beside a split unit. |
 | R6.11 | One **1200** sweep fan centred (polygon centroid) in each bedroom and living room. |
-| R6.12 | Downlights on a **1200** grid **(default pitch)** centred on the room, at least **500** from walls, **450** from joinery, **700** from the fan, **300** from ceiling step edges. |
-| R6.13 | One cove light along each ceiling step, **100** into the dropped band. |
+| R6.12 | Downlights on a **1200** grid **(default pitch)** centred on the room, at least **500** from walls, **450** from joinery, **700** from the fan, **300** from ceiling step edges and domes, **500** from pendants, **400** from tracks. |
+| R6.13 | One cove light along each ceiling step with `light: cove`, in its trough **75** inside the step edge (C3.10), and one inside each dome with `light: cove`. Design fittings (`ceilings[].lights[]`: pendants, tracks) are copied into `services.json` so they are switched. |
 | R6.14 | Plumbing **(default heights)**: basin and sink cold/hot **h550**, waste **h450**; WC cold **h150**, soil at floor; shower mixer **h1000**, head **h2100**, floor trap at its centre; washing machine cold **h1000**, waste **h600**; hot water runs from each geyser to its room's mixers. |
 | R6.15 | `services_overrides.json` is applied last: `remove` (ids), `move` (id + new `at`/`z`), `add` (full items). An override naming an unknown id is an error. |

@@ -28,7 +28,8 @@ NAMES = {
     "tv_power": "TV power", "worktop_socket": "Worktop socket", "db": "Distribution board", "vdp": "Video door phone",
     "router": "Router", "geyser_point": "Geyser power", "ac_isolator": "AC isolator", "wm_socket": "Washing machine",
     "ip44_socket": "Socket IP44", "downlight": "Downlight", "fan": "Fan 1200 sweep", "cove": "Cove light",
-    "exhaust": "Exhaust fan", "switchboard": "Switchboard", "switch_2way": "2-way switch", "cold": "Cold water",
+    "exhaust": "Exhaust fan", "pendant": "Pendant", "track": "Magnetic track", "chandelier": "Chandelier",
+    "spotlight": "Spotlight", "strip": "LED strip", "switchboard": "Switchboard", "switch_2way": "2-way switch", "cold": "Cold water",
     "hot": "Hot water", "waste": "Waste", "soil": "Soil (WC)", "floor_trap": "Floor trap", "geyser": "Geyser",
     "hot_run": "Hot water run", "split": "Split AC", "ducted": "Ducted AC (concealed)", "odu": "Outdoor unit",
     "supply_grille": "Linear supply grille", "return_grille": "Return grille", "refrigerant": "Refrigerant / drain route",
@@ -111,6 +112,8 @@ def sym(sh, kind, x, y, vx=0.0, vy=-1.0, c=None, z=9):
         for a in (0, 120, 240):
             r = math.radians(a)
             sh.line([(x, y), (x + math.cos(r) * 1.0, y + math.sin(r) * 1.0)], c, LW_THIN, z=z + 1)
+    elif kind in ("pendant", "chandelier"):
+        circ(1.7, f=T.PAPER, lw=LW_LINE); circ(0.8, f=c)
     elif kind == "fan_hub":
         circ(1.0, f=c)
     elif kind == "switchboard":
@@ -150,6 +153,19 @@ def _box(lx, ly, ha, s):
 
 def _hits(b):
     return any(not (b[2] < o[0] or b[0] > o[2] or b[3] < o[1] or b[1] > o[3]) for o in _PLACED)
+
+
+def draw_track(sh, pts, c):
+    """Magnetic track: double line with heads at intervals."""
+    (x0, y0), (x1, y1) = pts[0], pts[-1]
+    L = math.hypot(x1 - x0, y1 - y0) or 1
+    nx, ny = -(y1 - y0) / L * 0.45, (x1 - x0) / L * 0.45
+    for s_ in (-1, 1):
+        sh.line([(x0 + nx * s_, y0 + ny * s_), (x1 + nx * s_, y1 + ny * s_)], c, LW_THIN, z=9)
+    n = max(2, int(L / 9))
+    for i in range(n):
+        t = (i + 0.5) / n
+        sh.circle(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t, 0.75, edge=c, fill=c, lw=LW_HAIR)
 
 
 def label(sh, x, y, vx, vy, s, color=None, flag=False):
@@ -208,8 +224,9 @@ def services_base(pv, m, ceilings=False, items=()):
         for cdef in m.ceilings:
             r = m.room(cdef["room"])
             for s in cdef.get("steps", []):
-                g = geom.room_polygon(r).buffer(-s.get("inset", 500), join_style=2)
-                pv.fill(g, fill="none", edge=T.GREY, lw=LW_HAIR, dash=DASH, z=3)
+                pv.fill(geom.step_polygon(r, s), fill="none", edge=T.GREY, lw=LW_HAIR, dash=DASH, z=3)
+            for d in cdef.get("domes", []):
+                pv.fill(geom.dome_polygon(d), fill="none", edge=T.GREY, lw=LW_HAIR, dash=DASH, z=3)
     from shapely.geometry import Point
     occ = unary_union([Point(*i["at"]).buffer(pv.s * 3.0) for i in items]
                       + [Point(*i["at"]).buffer(i.get("size", [1200])[0] / 2 + pv.s) for i in items
@@ -286,7 +303,7 @@ def _draw_points(sh, pv, items, color_of):
 # ------------------------------------------------------------------ the five sheets
 POWER_KINDS = ["socket", "double_socket", "socket_usb", "lan", "tv_power", "worktop_socket", "ip44_socket",
                "wm_socket", "geyser_point", "ac_isolator", "db", "vdp", "router"]
-LIGHT_KINDS = ["downlight", "fan", "cove", "exhaust"]
+LIGHT_KINDS = ["downlight", "pendant", "track", "fan", "cove", "exhaust"]
 PLUMB_KINDS = ["cold", "hot", "waste", "soil", "floor_trap", "geyser", "hot_run"]
 AC_KINDS = ["split", "ducted", "odu", "supply_grille", "return_grille", "refrigerant"]
 
@@ -306,6 +323,8 @@ def _lighting_layer(sh, pv, items, faint=False):
         k = it["kind"]
         if k == "cove":
             sh.line([pv.P(*p) for p in it["path"]], a, LW_LINE if not faint else LW_THIN, DASH, z=9)
+        elif k in ("track", "strip"):
+            draw_track(sh, [pv.P(*p) for p in it["path"]], a)
         elif k == "fan":
             x, y = pv.P(*it["at"])
             sh.circle(x, y, pv.L(it.get("size", [1200])[0] / 2), edge=a, lw=LW_HAIR)
@@ -349,7 +368,7 @@ def switching(m, no, total):
         targets = [by_id[c] for c in s.get("controls", []) if c in by_id]
         pts = []
         for t in targets:
-            if t["kind"] == "cove":
+            if t["kind"] in ("cove", "track", "strip"):
                 pts.append(pv.P(*t["path"][0]))
             elif t["kind"] == "geyser_point":
                 tx_, ty_, _, _ = place(pv, t)

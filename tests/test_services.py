@@ -56,7 +56,14 @@ checks = [
     ("R6.11 one fan per bedroom/living", sorted(i["room"] for i in by("fan")) == ["BR2", "LD", "MBR"]),
     ("R6.12 downlights >= 700 from fan", all(Point(d["at"]).distance(fans[d["room"]]) >= 700
                                             for d in by("downlight") if d["room"] in fans)),
-    ("R6.13 one cove per step", len(by("cove")) == sum(len(c.get("steps", [])) for c in m.ceilings)),
+    ("R6.13 one cove per cove step and cove dome", len(by("cove")) ==
+     sum(sum(1 for s_ in c.get("steps", []) if s_.get("light") == "cove")
+         + sum(1 for d_ in c.get("domes", []) if d_.get("light") == "cove") for c in m.ceilings)),
+    ("R6.13 design fittings copied", {i["kind"] for i in S if i.get("rule") == "design"} >= {"pendant", "track"}),
+    ("R6.12 downlights clear of domes, pendants, tracks", all(
+        all(Point(d["at"]).distance(geom.dome_polygon(dm)) >= 300 for c in m.ceilings if c["room"] == d["room"]
+            for dm in c.get("domes", []))
+        for d in by("downlight"))),
     ("R6.15 overrides applied", any(i.get("source") == "override" for i in S)
      and not any(i["id"] == "SK-BR2-02" for i in S)),
 ]

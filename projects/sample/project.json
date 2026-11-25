@@ -9,6 +9,8 @@
     "flooring",
     "wall_finishes",
     "furniture",
+    "ceiling",
+    "sections",
     "power",
     "lighting",
     "switching",

@@ -645,35 +645,76 @@
   "ceilings": [
     {
       "room": "LD",
-      "z": 2700,
+      "z": 2550,
       "steps": [
         {
-          "inset": 600,
-          "z": 2850,
+          "inset": 450,
+          "z": 2650,
           "light": "cove"
+        },
+        {
+          "inset": 900,
+          "z": 2720,
+          "light": "cove"
+        }
+      ],
+      "domes": [
+        {
+          "id": "DM1",
+          "at": [7000, 2300],
+          "d": 1500,
+          "z": 2900,
+          "light": "cove"
+        }
+      ],
+      "lights": [
+        {
+          "kind": "pendant",
+          "at": [7000, 2300],
+          "note": "Over dining table, from dome centre"
         }
       ]
     },
     {
       "room": "MBR",
-      "z": 2700,
+      "z": 2550,
       "steps": [
         {
-          "inset": 500,
-          "z": 2850,
+          "poly": [
+            [600, 4600],
+            [2400, 4600],
+            [2400, 7200],
+            [600, 7200]
+          ],
+          "z": 2650,
           "light": "cove"
         }
       ]
     },
     {
+      "room": "DRS",
+      "z": 2550,
+      "steps": []
+    },
+    {
       "room": "BR2",
-      "z": 2750,
+      "z": 2600,
       "steps": []
     },
     {
       "room": "KIT",
-      "z": 2700,
-      "steps": []
+      "z": 2550,
+      "steps": [],
+      "lights": [
+        {
+          "kind": "track",
+          "path": [
+            [9700, 4700],
+            [9700, 6900]
+          ],
+          "note": "Magnetic track over the work zone"
+        }
+      ]
     },
     {
       "room": "MBT",
@@ -896,7 +937,30 @@
       "ref": null
     }
   ],
-  "views": [],
+  "views": [
+    {
+      "id": "A",
+      "kind": "section",
+      "line": [
+        [1500, -600],
+        [1500, 8400]
+      ],
+      "look": "E",
+      "scale": 50,
+      "title": "Section A\u2013A"
+    },
+    {
+      "id": "B",
+      "kind": "section",
+      "line": [
+        [-600, 2300],
+        [12000, 2300]
+      ],
+      "look": "N",
+      "scale": 50,
+      "title": "Section B\u2013B"
+    }
+  ],
   "cameras": [],
   "notes": [
     {

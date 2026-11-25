@@ -53,11 +53,14 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `furniture[]` | object | `id`, `room`, `kind`, `at` (centre of box), `size` `[w, d, h]` (w across the front, d front-to-back), `facing` (direction the front faces), `label` |
 | `joinery[]` | object | `id`, `room`, `kind`, `wall` (host), `offset`, `width`, `depth`, `z` (bottom, default 0), `height`, `rows[]` (bottom to top) |
 | `joinery[].rows[]` | object | `height`, `modules[]`: `{"w", "type", "label"}`. **Σ module w = joinery width**, **Σ row heights = height** |
-| `ceilings[]` | object | `room`, `z` (main ceiling), `steps[]`: `{"inset" or "poly", "z", "light"}` (`inset` = mm in from the room polygon), `lights[]`: `{"kind", "at"}` |
+| `ceilings[]` | object | `room`, `z` (lowest false-ceiling level, mm above FFL; omit `ceilings` entry = no false ceiling), `steps[]`, `domes[]`, `lights[]` |
+| `ceilings[].steps[]` | object | a raised area: `inset` (mm in from the room polygon: full tray) **or** `poly` (any area inside the room: partial tray), `z` (its level), `light` (`none` `cove` `profile`). Steps nest: list outer before inner; a point takes the `z` of the last step containing it. |
+| `ceilings[].domes[]` | object | `id`, `at` (centre), `d` (diameter), `z` (apex level), `light` (`none` `cove`). The dome springs from the level around it. |
+| `ceilings[].lights[]` | object | design fittings (downlights are placed by rule, STANDARDS §6): `kind`, `at` (pendant, chandelier, spotlight) or `path` (track, strip), `note` |
 | `wall_features[]` | object | `id`, `room`, `wall`, `offset`, `width`, `z0`, `z1`, `kind`, `finish` |
 | `floors[]` | object | `room`, `finish`, `pattern`, `module` `[w, l]` (plank or tile; mm), `start`, `skirting` (height), `angle` (optional, degrees anticlockwise from east; planks run along it) |
 | `finishes[]` | object | `code` (`FL-n` floors, `WFn` walls), `kind`, `name`, `maker`, `ref` (catalogue code). No colour values: material tones are mixed from `atelier/theme.py` tokens by `atelier/texture.py`. |
-| `views[]` | object | `id`, `kind`, `room` (optional), `wall` (elevations), `scale` (e.g. 25 for 1:25), `title` |
+| `views[]` | object | `id`, `kind`, `room` (optional), `wall` (elevations), `scale` (e.g. 25 for 1:25), `title`; sections also `line` `[[x, y], [x, y]]` (cut line) and `look` (`N` `E` `S` `W`: direction the viewer looks) |
 | `cameras[]` | object | `id`, `room`, `eye` `[x,y,z]`, `target` `[x,y,z]`, `lens` (mm, 35 mm equivalent) |
 | `notes[]` | object | `id`, `applies` (`"all"`, room id or view id), `text` |
 
@@ -78,7 +81,7 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `joinery.kind` | `wardrobe` `tv_unit` `kitchen_base` `kitchen_wall` `tall_unit` `vanity` `shoe_rack` `crockery` `study_unit` `bookshelf` `puja_unit` `other` |
 | `module.type` | `shutter` `glass_shutter` `drawer` `open` `loft` `appliance` `sink` `hob` `panel` `filler` |
 | `step.light` | `none` `cove` `profile` |
-| `light.kind` | `downlight` `spotlight` `pendant` `chandelier` `strip` `fan` |
+| `light.kind` | `downlight` `spotlight` `pendant` `chandelier` `strip` `track` `fan` (`track` = magnetic track, with `path`) |
 | `wall_feature.kind` | `panelling` `fluted` `cladding` `wallpaper` `paint` `tile` `stone` `mirror` `niche` `headboard` |
 | `floor.pattern` | `straight` `brick` `diagonal` `herringbone` `chevron` `plank` |
 | `floor.start` | `centre` `door` `corner` |

@@ -33,6 +33,7 @@ PREFIX = {
     "lan": "LN", "tv_power": "TV", "worktop_socket": "WK", "db": "DB", "vdp": "VD", "router": "RT",
     "geyser_point": "GP", "ac_isolator": "AI", "wm_socket": "WM", "ip44_socket": "IP",
     "downlight": "DL", "fan": "FN", "cove": "CV", "exhaust": "EX",
+    "pendant": "PD", "track": "TK", "chandelier": "CH", "spotlight": "SP", "strip": "ST",
     "cold": "CW", "hot": "HW", "waste": "WW", "soil": "SL", "floor_trap": "FT", "geyser": "GY", "hot_run": "HR",
     "split": "AC", "ducted": "AD", "odu": "OU", "supply_grille": "SG", "return_grille": "RG", "refrigerant": "RF",
 }
@@ -307,9 +308,10 @@ class Builder:
                 continue
             if feats and tray:
                 f = max(ext, key=lambda f: f.length)
-                inset = ceil["steps"][0].get("inset", 500)
                 t = f.length / 2
                 face_pt = self.at_t(f, t)
+                step = geom.step_polygon(r, ceil["steps"][0])
+                inset = max(300, min(900, step.exterior.distance(Point(face_pt))))
                 ang = math.radians(self.into(f))
                 ix, iy = math.sin(ang), math.cos(ang)
                 unit = (face_pt[0] + ix * inset * 0.42, face_pt[1] + iy * inset * 0.42)
@@ -320,9 +322,7 @@ class Builder:
                 self.add("ac", "refrigerant", rid, unit, None, "R6.10",
                          path=[[round(unit[0]), round(unit[1])], [round(face_pt[0]), round(face_pt[1])],
                                [round(odu[0]), round(odu[1])]])
-                step = self.poly[rid].buffer(-inset, join_style=2)
                 if not step.is_empty:
-                    step = max(getattr(step, "geoms", [step]), key=lambda g: g.area)
                     cs = list(step.exterior.coords)
                     edges = [(cs[i], cs[i + 1]) for i in range(len(cs) - 1)]
                     a, b = min(edges, key=lambda e: LineString(e).distance(Point(unit)) - LineString(e).length * 1e-4)
@@ -398,8 +398,11 @@ class Builder:
             j_polys = [geom.joinery_polygon(j, self.m.wall(j["wall"]), r) for j in self.m.joinery if j["room"] == rid]
             joinery = unary_union(j_polys) if j_polys else None
             fans = [Point(i["at"]) for i in self.items if i["room"] == rid and i["kind"] == "fan"]
-            ceil = next((c for c in self.m.ceilings if c["room"] == rid), None)
-            steps = [poly.buffer(-s.get("inset", 500), join_style=2).boundary for s in (ceil or {}).get("steps", [])]
+            ceil = next((c for c in self.m.ceilings if c["room"] == rid), None) or {}
+            steps = [geom.step_polygon(r, s_).boundary for s_ in ceil.get("steps", [])]
+            domes = [geom.dome_polygon(d_) for d_ in ceil.get("domes", [])]
+            pend = [Point(l_["at"]) for l_ in ceil.get("lights", []) if l_.get("at")]
+            tracks = [LineString(l_["path"]) for l_ in ceil.get("lights", []) if l_.get("path")]
             c = poly.centroid
             x0, y0, x1, y1 = poly.bounds
 
@@ -416,6 +419,10 @@ class Builder:
                             continue
                         if any(p.distance(s_) < 300 for s_ in steps):
                             continue
+                        if any(p.distance(d_) < 300 for d_ in domes):
+                            continue
+                        if any(p.distance(q) < 500 for q in pend) or any(p.distance(t_) < 400 for t_ in tracks):
+                            continue
                         pts.append(p)
                 return pts
             h = pitch / 2
@@ -429,18 +436,33 @@ class Builder:
                          note="room too small for the grid: one centred")
 
     def r6_13_cove(self):
+        """Coves in the trough 75 inside each step edge (C3.10) and inside domes; design fittings copied."""
         for cdef in self.m.ceilings:
             r = self.m.room(cdef["room"])
             if not r:
                 continue
-            for s in cdef.get("steps", []):
-                if s.get("light", "cove") != "cove":
+            for s_ in cdef.get("steps", []):
+                if s_.get("light", "cove") != "cove":
                     continue
-                band = geom.room_polygon(r).buffer(-(s.get("inset", 500) - 100), join_style=2)
+                band = geom.step_polygon(r, s_).buffer(-75, join_style=2)
+                if band.is_empty:
+                    continue
                 band = max(getattr(band, "geoms", [band]), key=lambda g: g.area)
                 pts = [[round(x), round(y)] for x, y in band.exterior.coords]
                 c = band.centroid
-                self.add("lighting", "cove", r["id"], (c.x, c.y), None, "R6.13", path=pts)
+                self.add("lighting", "cove", r["id"], (c.x, c.y), None, "R6.13", path=pts, level=s_["z"])
+            for d in cdef.get("domes", []):
+                if d.get("light") == "cove":
+                    ring = Point(d["at"]).buffer(d["d"] / 2 - 75, 48)
+                    pts = [[round(x), round(y)] for x, y in ring.exterior.coords]
+                    self.add("lighting", "cove", r["id"], d["at"], None, "R6.13", path=pts, note=f"in dome {d.get('id')}")
+            for lt in cdef.get("lights", []):
+                k = lt.get("kind")
+                if k not in PREFIX:
+                    continue
+                at = lt.get("at") or [round(sum(p[0] for p in lt["path"]) / len(lt["path"])),
+                                      round(sum(p[1] for p in lt["path"]) / len(lt["path"]))]
+                self.add("lighting", k, r["id"], at, None, "design", path=lt.get("path"), note=lt.get("note"))
 
     # ------------------------------------------------------------ R6.14 plumbing
     def r6_14_plumbing(self):

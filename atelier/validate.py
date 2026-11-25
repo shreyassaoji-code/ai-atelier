@@ -216,6 +216,43 @@ def check(m: Model) -> Report:
         if r.get("wall_finish") and r["wall_finish"] not in codes:
             R.E("E-FINISH", f"room {r['id']}: unknown wall finish {r['wall_finish']!r}")
 
+    # ---- ceilings ---------------------------------------------------------------
+    soffit = m.levels.get("soffit")
+    light_kinds = {"downlight", "spotlight", "pendant", "chandelier", "strip", "track", "fan"}
+    for c in m.ceilings:
+        r = m.room(c.get("room"))
+        if not r:
+            R.E("E-REF", f"ceiling for unknown room {c.get('room')!r}")
+            continue
+        rp = rpoly[r["id"]]
+        zs = [c.get("z")]
+        for i, st in enumerate(c.get("steps", []), 1):
+            sp = geom.step_polygon(r, st)
+            if sp.is_empty:
+                R.E("E-CEIL", f"ceiling {r['id']} step {i}: empty (inset too large?)")
+                continue
+            if not rp.buffer(1).contains(sp):
+                R.E("E-CEIL", f"ceiling {r['id']} step {i}: area runs outside the room")
+            if st.get("z") is not None and zs[-1] is not None and st["z"] <= zs[-1]:
+                R.W("W-CEIL", f"ceiling {r['id']} step {i}: +{st['z']} is not above the level around it (+{zs[-1]})")
+            if st.get("light") not in (None, "none", "cove", "profile"):
+                R.E("E-ENUM", f"ceiling {r['id']} step {i}: light {st.get('light')!r}")
+            zs.append(st.get("z"))
+        for d in c.get("domes", []):
+            if not rp.buffer(1).contains(geom.dome_polygon(d)):
+                R.E("E-CEIL", f"dome {d.get('id')} in {r['id']} runs outside the room")
+        for lt in c.get("lights", []):
+            if lt.get("kind") not in light_kinds:
+                R.E("E-ENUM", f"ceiling {r['id']}: light kind {lt.get('kind')!r}")
+        top = max([z for z in zs if z is not None] + [d["z"] for d in c.get("domes", [])], default=None)
+        if soffit and top and top > soffit - 50:
+            R.E("E-CEIL", f"ceiling {r['id']}: +{top} leaves < 50 below the slab soffit +{soffit}")
+    for v in m.views:
+        if v.get("kind") == "section":
+            ln = v.get("line")
+            if not ln or len(ln) != 2 or v.get("look") not in ("N", "E", "S", "W"):
+                R.E("E-VIEW", f"section {v.get('id')}: needs line [[x,y],[x,y]] and look N/E/S/W")
+
     # ---- 7. computed vs printed area ---------------------------------------------
     for r in m.rooms:
         if r.get("area_printed"):
