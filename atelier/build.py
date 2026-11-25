@@ -39,6 +39,10 @@ def main(argv=None):
         print(f"validate: {len(rep.errors)} errors; fix the data before building")
         return 1
     names = json.loads((a.project / "project.json").read_text())["sheets"]
+    if not (a.project / "services.json").exists() and any(n in ("power", "lighting", "switching", "plumbing", "ac")
+                                                            for n in names):
+        print(f"services.json missing: run  python -m atelier.services {a.project}")
+        return 1
     sc = fit_scale(envelope_bounds(m.walls))
     m.album = [(i, n, SHEET_DEFS[n][1], f"1:{sc}" if SHEET_DEFS[n][2] else "—") for i, n in enumerate(names, 1)]
     out = a.project / "out" / "sheets"

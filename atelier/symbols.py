@@ -232,3 +232,38 @@ def draw_joinery(pv, j, wall, room, mode="present", label=False):
         c = whole.centroid
         x, y = pv.P(c.x, c.y)
         pv.sh.text(x, y, j["id"], sans("dim", 600), T.GREY, ha="center", va="center", zorder=8)
+
+
+# =================================================================== sanitary (top-down)
+def sanitary_parts(s):
+    w, d = s["size"][0], s["size"][1]
+    A, B = w / 2, d / 2
+    k = s.get("kind")
+    P = []
+    if k == "wc":
+        P.append((_rr(-A, -B, A, -B + 180, 30), "worktop"))                       # cistern at the back
+        bowl = _Pt(0, (-B + 180 + B) / 2 + 10).buffer(1, 32)
+        from shapely.affinity import scale as _sc
+        P.append((_sc(bowl, A * 0.85, (B * 2 - 180) / 2 * 0.95), "linen"))
+    elif k in ("shower", "bathtub"):
+        P.append((_rr(-A, -B, A, B, 20), "worktop"))
+        P.append((_rr(-A + 40, -B + 40, A - 40, B - 40, 15), "inner"))
+        P.append((_circ(0, 0, min(A, B) * 0.09), "metal"))
+    elif k == "washing_machine":
+        P.append((_rr(-A, -B, A, B, 30), "linen"))
+        P.append((_circ(0, B * 0.05, min(A, B) * 0.62), "inner"))
+    return P
+
+
+def draw_sanitary(pv, s, mode="present"):
+    from atelier.texture import hexc, mix, palette
+    pal = palette()
+    edge = hexc(mix(T.INK, T.PAPER, 0.35))
+    for g, role in sanitary_parts(s):
+        rings = pv.rings(_to_plan(s, g))
+        if mode == "line":
+            pv.sh.region(rings, fill="none", edge=T.INK if role != "inner" else T.GREY, lw=LW_THIN, z=6)
+        elif role == "inner":
+            pv.sh.region(rings, fill="none", edge=edge, lw=LW_HAIR, z=6)
+        else:
+            pv.sh.region(rings, fill=hexc(pal[role]), edge=edge, lw=LW_HAIR, z=6)

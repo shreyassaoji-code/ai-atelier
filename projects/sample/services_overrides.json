@@ -1,0 +1,31 @@
+{
+  "_note": "Sample overrides, to exercise R6.15: remove one generated socket, move the router beside the TV unit, add a floor socket behind the sofa.",
+  "remove": [
+    "SK-BR2-02"
+  ],
+  "move": [
+    {
+      "id": "RT-LD-01",
+      "at": [
+        2650,
+        4000
+      ],
+      "z": 300
+    }
+  ],
+  "add": [
+    {
+      "id": "FS-LD-01",
+      "system": "power",
+      "kind": "double_socket",
+      "room": "LD",
+      "at": [
+        1500,
+        1750
+      ],
+      "z": 0,
+      "wall": null,
+      "note": "Floor socket behind sofa (client request)"
+    }
+  ]
+}

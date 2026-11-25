@@ -39,6 +39,7 @@ ENUMS = {
                         "store", "dress", "shaft"},
     ("furniture", "kind"): {"sofa", "armchair", "coffee_table", "side_table", "dining_table", "chair",
                             "bed", "bedside", "desk", "rug", "console", "tv", "plant", "other"},
+    ("sanitary", "kind"): {"wc", "shower", "bathtub", "washing_machine"},
     ("joinery", "kind"): {"wardrobe", "tv_unit", "kitchen_base", "kitchen_wall", "tall_unit", "vanity",
                           "shoe_rack", "crockery", "study_unit", "bookshelf", "puja_unit", "other"},
 }
@@ -49,6 +50,7 @@ MM_FIELDS = {
     "openings": ("offset", "width", "sill", "head"),
     "rooms": ("poly", "ffl"),
     "furniture": ("at", "size"),
+    "sanitary": ("at", "size"),
     "joinery": ("offset", "width", "depth", "z", "height"),
 }
 ID_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
@@ -76,7 +78,7 @@ class Report:
 def check(m: Model) -> Report:
     R = Report()
     lists = {"walls": m.walls, "openings": m.openings, "rooms": m.rooms,
-             "furniture": m.furniture, "joinery": m.joinery}
+             "furniture": m.furniture, "sanitary": m.sanitary, "joinery": m.joinery}
 
     # ---- schema: ids, integers, enums, references --------------------------------
     seen = {}
@@ -98,7 +100,7 @@ def check(m: Model) -> Report:
     for o in m.openings:
         if not m.wall(o.get("wall")):
             R.E("E-REF", f"opening {o['id']} on unknown wall {o.get('wall')!r}")
-    for k in ("furniture", "joinery"):
+    for k in ("furniture", "sanitary", "joinery"):
         for o in lists[k]:
             if not m.room(o.get("room")):
                 R.E("E-REF", f"{k} {o['id']} in unknown room {o.get('room')!r}")
@@ -141,7 +143,7 @@ def check(m: Model) -> Report:
 
     # ---- 3. furniture inside its room, no overlaps -------------------------------
     solid = {}
-    for f in m.furniture:
+    for f in list(m.furniture) + list(m.sanitary):
         p = geom.furniture_polygon(f)
         if not rpoly[f["room"]].buffer(1).contains(p):
             R.E("E-FURN-OUTSIDE", f"furniture {f['id']} ({f.get('kind')}) is not inside room {f['room']}")

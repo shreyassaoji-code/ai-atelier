@@ -188,6 +188,24 @@ def room_edges(room, walls=()) -> list[Edge]:
     return edges
 
 
+def room_faces(room, walls) -> list[Edge]:
+    """Room edges split into the stretches lying on each wall's face (edge.wall = host)."""
+    out = []
+    for e in room_edges(room, walls):
+        seg = LineString([e.a, e.b])
+        ux, uy = (e.b[0] - e.a[0]) / e.length, (e.b[1] - e.a[1]) / e.length
+        for w in walls:
+            part = seg.intersection(wall_polygon(w).buffer(2))
+            for g in getattr(part, "geoms", [part]):
+                if g.is_empty or g.geom_type != "LineString" or g.length < 20:
+                    continue
+                p0, p1 = g.coords[0], g.coords[-1]
+                if (p1[0] - p0[0]) * ux + (p1[1] - p0[1]) * uy < 0:
+                    p0, p1 = p1, p0
+                out.append(Edge(e.n, p0, p1, g.length, e.facing, w["id"]))
+    return out
+
+
 def room_side_of_wall(wall, room) -> str | None:
     """'left' or 'right': which side of the wall faces the room."""
     L = wall_length(wall)

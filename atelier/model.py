@@ -13,7 +13,7 @@ from pathlib import Path
 
 from atelier import geom
 
-DESIGN_LISTS = ("furniture", "joinery", "ceilings", "wall_features", "floors",
+DESIGN_LISTS = ("furniture", "sanitary", "joinery", "ceilings", "wall_features", "floors",
                 "finishes", "views", "cameras", "notes")
 
 

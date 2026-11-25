@@ -8,6 +8,11 @@
     "presentation",
     "flooring",
     "wall_finishes",
-    "furniture"
+    "furniture",
+    "power",
+    "lighting",
+    "switching",
+    "plumbing",
+    "ac"
   ]
 }

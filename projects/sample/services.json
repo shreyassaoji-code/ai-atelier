@@ -1,0 +1,1789 @@
+{
+ "schema": "atelier/services@1",
+ "rules": "agents/STANDARDS.md §6",
+ "sources": [
+  "survey.json",
+  "design.json",
+  "services_overrides.json"
+ ],
+ "items": [
+  {
+   "id": "FN-LD-01",
+   "system": "lighting",
+   "kind": "fan",
+   "room": "LD",
+   "at": [
+    5271,
+    2222
+   ],
+   "z": null,
+   "rule": "R6.11",
+   "size": [
+    1200,
+    1200
+   ]
+  },
+  {
+   "id": "FN-MBR-01",
+   "system": "lighting",
+   "kind": "fan",
+   "room": "MBR",
+   "at": [
+    1802,
+    5690
+   ],
+   "z": null,
+   "rule": "R6.11",
+   "size": [
+    1200,
+    1200
+   ]
+  },
+  {
+   "id": "FN-BR2-01",
+   "system": "lighting",
+   "kind": "fan",
+   "room": "BR2",
+   "at": [
+    7360,
+    5842
+   ],
+   "z": null,
+   "rule": "R6.11",
+   "size": [
+    1200,
+    1200
+   ]
+  },
+  {
+   "id": "DL-LD-01",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    1671,
+    1622
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-02",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    1671,
+    2822
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-03",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    2871,
+    1622
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-04",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    2871,
+    2822
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-05",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    4071,
+    1622
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-06",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    4071,
+    2822
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-07",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    6471,
+    1622
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-08",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    6471,
+    2822
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-09",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    7671,
+    1622
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-10",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    7671,
+    2822
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-11",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    8871,
+    2822
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-LD-12",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "LD",
+   "at": [
+    10071,
+    2822
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-KIT-01",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "KIT",
+   "at": [
+    10072,
+    4642
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-KIT-02",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "KIT",
+   "at": [
+    10072,
+    5842
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-MBR-01",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "MBR",
+   "at": [
+    1202,
+    5090
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-MBR-02",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "MBR",
+   "at": [
+    1202,
+    6290
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-MBT-01",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "MBT",
+   "at": [
+    4845,
+    6742
+   ],
+   "z": null,
+   "rule": "R6.12",
+   "ip": "IP44",
+   "note": "room too small for the grid: one centred"
+  },
+  {
+   "id": "DL-CBT-01",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "CBT",
+   "at": [
+    4845,
+    4958
+   ],
+   "z": null,
+   "rule": "R6.12",
+   "ip": "IP44"
+  },
+  {
+   "id": "DL-BR2-01",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "BR2",
+   "at": [
+    6760,
+    5242
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-BR2-02",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "BR2",
+   "at": [
+    6760,
+    6442
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-BR2-03",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "BR2",
+   "at": [
+    7960,
+    5242
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-BR2-04",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "BR2",
+   "at": [
+    7960,
+    6442
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-BAL-01",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "BAL",
+   "at": [
+    10072,
+    980
+   ],
+   "z": null,
+   "rule": "R6.12"
+  },
+  {
+   "id": "DL-DRS-01",
+   "system": "lighting",
+   "kind": "downlight",
+   "room": "DRS",
+   "at": [
+    3330,
+    6722
+   ],
+   "z": null,
+   "rule": "R6.12",
+   "note": "room too small for the grid: one centred"
+  },
+  {
+   "id": "CV-LD-01",
+   "system": "lighting",
+   "kind": "cove",
+   "room": "LD",
+   "at": [
+    5102,
+    2206
+   ],
+   "z": null,
+   "rule": "R6.13",
+   "path": [
+    [
+     730,
+     730
+    ],
+    [
+     730,
+     3500
+    ],
+    [
+     10670,
+     3500
+    ],
+    [
+     10670,
+     2345
+    ],
+    [
+     8360,
+     2345
+    ],
+    [
+     8360,
+     730
+    ],
+    [
+     730,
+     730
+    ]
+   ]
+  },
+  {
+   "id": "CV-MBR-01",
+   "system": "lighting",
+   "kind": "cove",
+   "room": "MBR",
+   "at": [
+    1733,
+    5690
+   ],
+   "z": null,
+   "rule": "R6.13",
+   "path": [
+    [
+     630,
+     4515
+    ],
+    [
+     630,
+     7170
+    ],
+    [
+     2355,
+     7170
+    ],
+    [
+     2355,
+     5400
+    ],
+    [
+     3430,
+     5400
+    ],
+    [
+     3430,
+     4515
+    ],
+    [
+     630,
+     4515
+    ]
+   ]
+  },
+  {
+   "id": "GP-MBT-01",
+   "system": "power",
+   "kind": "geyser_point",
+   "room": "MBT",
+   "at": [
+    5295,
+    5915
+   ],
+   "z": 2000,
+   "rule": "R6.8",
+   "wall": "I5",
+   "into": 0,
+   "ip": "IP44"
+  },
+  {
+   "id": "GY-MBT-01",
+   "system": "plumbing",
+   "kind": "geyser",
+   "room": "MBT",
+   "at": [
+    5295,
+    5915
+   ],
+   "z": 1800,
+   "rule": "R6.8",
+   "wall": "I5",
+   "into": 0
+  },
+  {
+   "id": "EX-MBT-01",
+   "system": "lighting",
+   "kind": "exhaust",
+   "room": "MBT",
+   "at": [
+    4800,
+    7570
+   ],
+   "z": 2100,
+   "rule": "R6.8",
+   "wall": "X3",
+   "into": 180,
+   "ip": "IP44",
+   "note": "in V1"
+  },
+  {
+   "id": "IP-MBT-01",
+   "system": "power",
+   "kind": "ip44_socket",
+   "room": "MBT",
+   "at": [
+    4005,
+    7570
+   ],
+   "z": 1100,
+   "rule": "R6.8",
+   "wall": "X3",
+   "into": 180,
+   "ip": "IP44"
+  },
+  {
+   "id": "GP-CBT-01",
+   "system": "power",
+   "kind": "geyser_point",
+   "room": "CBT",
+   "at": [
+    5295,
+    5800
+   ],
+   "z": 2000,
+   "rule": "R6.8",
+   "wall": "I5",
+   "into": 180,
+   "ip": "IP44"
+  },
+  {
+   "id": "GY-CBT-01",
+   "system": "plumbing",
+   "kind": "geyser",
+   "room": "CBT",
+   "at": [
+    5295,
+    5800
+   ],
+   "z": 1800,
+   "rule": "R6.8",
+   "wall": "I5",
+   "into": 180
+  },
+  {
+   "id": "EX-CBT-01",
+   "system": "lighting",
+   "kind": "exhaust",
+   "room": "CBT",
+   "at": [
+    4845,
+    4958
+   ],
+   "z": null,
+   "rule": "R6.8",
+   "ip": "IP44",
+   "note": "ceiling exhaust, ducted (no external wall)"
+  },
+  {
+   "id": "IP-CBT-01",
+   "system": "power",
+   "kind": "ip44_socket",
+   "room": "CBT",
+   "at": [
+    5745,
+    5065
+   ],
+   "z": 1100,
+   "rule": "R6.8",
+   "wall": "I3",
+   "into": 270,
+   "ip": "IP44"
+  },
+  {
+   "id": "WM-BAL-01",
+   "system": "power",
+   "kind": "wm_socket",
+   "room": "BAL",
+   "at": [
+    11170,
+    1670
+   ],
+   "z": 1100,
+   "rule": "R6.8",
+   "wall": "P2",
+   "into": 270,
+   "ip": "IP44"
+  },
+  {
+   "id": "SB-LD-01",
+   "system": "switching",
+   "kind": "switchboard",
+   "room": "LD",
+   "at": [
+    11170,
+    3750
+   ],
+   "z": 1200,
+   "rule": "R6.1",
+   "wall": "X2",
+   "into": 270,
+   "serves": "LD",
+   "controls": [
+    "FN-LD-01",
+    "DL-LD-01",
+    "DL-LD-02",
+    "DL-LD-03",
+    "DL-LD-04",
+    "DL-LD-05",
+    "DL-LD-06",
+    "DL-LD-07",
+    "DL-LD-08",
+    "DL-LD-09",
+    "DL-LD-10",
+    "DL-LD-11",
+    "DL-LD-12",
+    "CV-LD-01"
+   ]
+  },
+  {
+   "id": "SB-KIT-01",
+   "system": "switching",
+   "kind": "switchboard",
+   "room": "KIT",
+   "at": [
+    10723,
+    4115
+   ],
+   "z": 1200,
+   "rule": "R6.1",
+   "wall": "I1b",
+   "into": 0,
+   "serves": "KIT",
+   "controls": [
+    "DL-KIT-01",
+    "DL-KIT-02"
+   ]
+  },
+  {
+   "id": "SB-MBR-01",
+   "system": "switching",
+   "kind": "switchboard",
+   "room": "MBR",
+   "at": [
+    2550,
+    4115
+   ],
+   "z": 1200,
+   "rule": "R6.1",
+   "wall": "I1a",
+   "into": 0,
+   "serves": "MBR",
+   "controls": [
+    "FN-MBR-01",
+    "DL-MBR-01",
+    "DL-MBR-02",
+    "CV-MBR-01"
+   ]
+  },
+  {
+   "id": "SB-DRS-01",
+   "system": "switching",
+   "kind": "switchboard",
+   "room": "DRS",
+   "at": [
+    3830,
+    6150
+   ],
+   "z": 1200,
+   "rule": "R6.2",
+   "wall": "I2",
+   "into": 270,
+   "serves": "MBT",
+   "controls": [
+    "DL-MBT-01",
+    "EX-MBT-01",
+    "GP-MBT-01"
+   ]
+  },
+  {
+   "id": "SB-LD-02",
+   "system": "switching",
+   "kind": "switchboard",
+   "room": "LD",
+   "at": [
+    4350,
+    4000
+   ],
+   "z": 1200,
+   "rule": "R6.2",
+   "wall": "I1a",
+   "into": 180,
+   "serves": "CBT",
+   "controls": [
+    "DL-CBT-01",
+    "EX-CBT-01",
+    "GP-CBT-01"
+   ]
+  },
+  {
+   "id": "SB-BR2-01",
+   "system": "switching",
+   "kind": "switchboard",
+   "room": "BR2",
+   "at": [
+    7650,
+    4115
+   ],
+   "z": 1200,
+   "rule": "R6.1",
+   "wall": "I1a",
+   "into": 0,
+   "serves": "BR2",
+   "controls": [
+    "FN-BR2-01",
+    "DL-BR2-01",
+    "DL-BR2-02",
+    "DL-BR2-03",
+    "DL-BR2-04"
+   ]
+  },
+  {
+   "id": "SB-BAL-01",
+   "system": "switching",
+   "kind": "switchboard",
+   "room": "BAL",
+   "at": [
+    8975,
+    1670
+   ],
+   "z": 1200,
+   "rule": "R6.1",
+   "wall": "I6",
+   "into": 90,
+   "serves": "BAL",
+   "controls": [
+    "DL-BAL-01"
+   ]
+  },
+  {
+   "id": "SB-DRS-02",
+   "system": "switching",
+   "kind": "switchboard",
+   "room": "DRS",
+   "at": [
+    3830,
+    6150
+   ],
+   "z": 1200,
+   "rule": "R6.1",
+   "wall": "I2",
+   "into": 270,
+   "serves": "DRS",
+   "controls": [
+    "DL-DRS-01"
+   ]
+  },
+  {
+   "id": "SK-LD-01",
+   "system": "power",
+   "kind": "socket",
+   "room": "LD",
+   "at": [
+    7705,
+    230
+   ],
+   "z": 300,
+   "rule": "R6.3",
+   "wall": "X1",
+   "into": 0
+  },
+  {
+   "id": "SK-LD-02",
+   "system": "power",
+   "kind": "socket",
+   "room": "LD",
+   "at": [
+    10072,
+    1845
+   ],
+   "z": 300,
+   "rule": "R6.3",
+   "wall": "I7",
+   "into": 0
+  },
+  {
+   "id": "SK-LD-03",
+   "system": "power",
+   "kind": "socket",
+   "room": "LD",
+   "at": [
+    230,
+    3475
+   ],
+   "z": 300,
+   "rule": "R6.3",
+   "wall": "X4",
+   "into": 90
+  },
+  {
+   "id": "SK-MBR-01",
+   "system": "power",
+   "kind": "socket",
+   "room": "MBR",
+   "at": [
+    1490,
+    4115
+   ],
+   "z": 300,
+   "rule": "R6.3",
+   "wall": "I1a",
+   "into": 0
+  },
+  {
+   "id": "SK-MBR-02",
+   "system": "power",
+   "kind": "socket",
+   "room": "MBR",
+   "at": [
+    740,
+    7570
+   ],
+   "z": 300,
+   "rule": "R6.3",
+   "wall": "X3",
+   "into": 180
+  },
+  {
+   "id": "SK-MBR-03",
+   "system": "power",
+   "kind": "socket",
+   "room": "MBR",
+   "at": [
+    230,
+    5842
+   ],
+   "z": 300,
+   "rule": "R6.3",
+   "wall": "X4",
+   "into": 90
+  },
+  {
+   "id": "SK-BR2-01",
+   "system": "power",
+   "kind": "socket",
+   "room": "BR2",
+   "at": [
+    8860,
+    5842
+   ],
+   "z": 300,
+   "rule": "R6.3",
+   "wall": "I4",
+   "into": 270
+  },
+  {
+   "id": "SU-MBR-01",
+   "system": "power",
+   "kind": "socket_usb",
+   "room": "MBR",
+   "at": [
+    230,
+    4950
+   ],
+   "z": 600,
+   "rule": "R6.4",
+   "wall": "X4",
+   "into": 90
+  },
+  {
+   "id": "S2-MBR-01",
+   "system": "switching",
+   "kind": "switch_2way",
+   "room": "MBR",
+   "at": [
+    230,
+    4720
+   ],
+   "z": 750,
+   "rule": "R6.4",
+   "wall": "X4",
+   "into": 90,
+   "controls": [
+    "DL-MBR-01",
+    "DL-MBR-02"
+   ]
+  },
+  {
+   "id": "SU-MBR-02",
+   "system": "power",
+   "kind": "socket_usb",
+   "room": "MBR",
+   "at": [
+    230,
+    7050
+   ],
+   "z": 600,
+   "rule": "R6.4",
+   "wall": "X4",
+   "into": 90
+  },
+  {
+   "id": "S2-MBR-02",
+   "system": "switching",
+   "kind": "switch_2way",
+   "room": "MBR",
+   "at": [
+    230,
+    6820
+   ],
+   "z": 750,
+   "rule": "R6.4",
+   "wall": "X4",
+   "into": 90,
+   "controls": [
+    "DL-MBR-01",
+    "DL-MBR-02"
+   ]
+  },
+  {
+   "id": "SU-BR2-01",
+   "system": "power",
+   "kind": "socket_usb",
+   "room": "BR2",
+   "at": [
+    5860,
+    5150
+   ],
+   "z": 600,
+   "rule": "R6.4",
+   "wall": "I3",
+   "into": 90
+  },
+  {
+   "id": "S2-BR2-01",
+   "system": "switching",
+   "kind": "switch_2way",
+   "room": "BR2",
+   "at": [
+    5860,
+    4920
+   ],
+   "z": 750,
+   "rule": "R6.4",
+   "wall": "I3",
+   "into": 90,
+   "controls": [
+    "DL-BR2-01",
+    "DL-BR2-02",
+    "DL-BR2-03",
+    "DL-BR2-04"
+   ]
+  },
+  {
+   "id": "SU-BR2-02",
+   "system": "power",
+   "kind": "socket_usb",
+   "room": "BR2",
+   "at": [
+    5860,
+    7250
+   ],
+   "z": 600,
+   "rule": "R6.4",
+   "wall": "I3",
+   "into": 90
+  },
+  {
+   "id": "S2-BR2-02",
+   "system": "switching",
+   "kind": "switch_2way",
+   "room": "BR2",
+   "at": [
+    5860,
+    7020
+   ],
+   "z": 750,
+   "rule": "R6.4",
+   "wall": "I3",
+   "into": 90,
+   "controls": [
+    "DL-BR2-01",
+    "DL-BR2-02",
+    "DL-BR2-03",
+    "DL-BR2-04"
+   ]
+  },
+  {
+   "id": "DS-BR2-01",
+   "system": "power",
+   "kind": "double_socket",
+   "room": "BR2",
+   "at": [
+    8860,
+    6850
+   ],
+   "z": 850,
+   "rule": "R6.5",
+   "wall": "I4",
+   "into": 270
+  },
+  {
+   "id": "LN-BR2-01",
+   "system": "power",
+   "kind": "lan",
+   "room": "BR2",
+   "at": [
+    8860,
+    7150
+   ],
+   "z": 850,
+   "rule": "R6.5",
+   "wall": "I4",
+   "into": 270
+  },
+  {
+   "id": "TV-LD-01",
+   "system": "power",
+   "kind": "tv_power",
+   "room": "LD",
+   "at": [
+    1600,
+    4000
+   ],
+   "z": 1100,
+   "rule": "R6.6",
+   "wall": "I1a",
+   "into": 180
+  },
+  {
+   "id": "LN-LD-01",
+   "system": "power",
+   "kind": "lan",
+   "room": "LD",
+   "at": [
+    1300,
+    4000
+   ],
+   "z": 1100,
+   "rule": "R6.6",
+   "wall": "I1a",
+   "into": 180
+  },
+  {
+   "id": "WK-KIT-01",
+   "system": "power",
+   "kind": "worktop_socket",
+   "room": "KIT",
+   "at": [
+    11170,
+    4565
+   ],
+   "z": 1100,
+   "rule": "R6.7",
+   "wall": "X2",
+   "into": 270
+  },
+  {
+   "id": "WK-KIT-02",
+   "system": "power",
+   "kind": "worktop_socket",
+   "room": "KIT",
+   "at": [
+    11170,
+    6365
+   ],
+   "z": 1100,
+   "rule": "R6.7",
+   "wall": "X2",
+   "into": 270
+  },
+  {
+   "id": "WK-KIT-03",
+   "system": "power",
+   "kind": "worktop_socket",
+   "room": "KIT",
+   "at": [
+    11170,
+    7265
+   ],
+   "z": 1100,
+   "rule": "R6.7",
+   "wall": "X2",
+   "into": 270
+  },
+  {
+   "id": "WK-KIT-04",
+   "system": "power",
+   "kind": "worktop_socket",
+   "room": "KIT",
+   "at": [
+    9820,
+    7570
+   ],
+   "z": 1100,
+   "rule": "R6.7",
+   "wall": "X3",
+   "into": 180
+  },
+  {
+   "id": "DB-LD-01",
+   "system": "power",
+   "kind": "db",
+   "room": "LD",
+   "at": [
+    11170,
+    2200
+   ],
+   "z": 1500,
+   "rule": "R6.9",
+   "wall": "X2",
+   "into": 270
+  },
+  {
+   "id": "RT-LD-01",
+   "system": "power",
+   "kind": "router",
+   "room": "LD",
+   "at": [
+    2650,
+    4000
+   ],
+   "z": 300,
+   "rule": "R6.9",
+   "wall": "I1a",
+   "into": 180,
+   "source": "override"
+  },
+  {
+   "id": "VD-LD-01",
+   "system": "power",
+   "kind": "vdp",
+   "room": "LD",
+   "at": [
+    11170,
+    3940
+   ],
+   "z": 1400,
+   "rule": "R6.9",
+   "wall": "X2",
+   "into": 270
+  },
+  {
+   "id": "AD-LD-01",
+   "system": "ac",
+   "kind": "ducted",
+   "room": "LD",
+   "at": [
+    4545,
+    482
+   ],
+   "z": null,
+   "rule": "R6.10",
+   "size": [
+    1000,
+    360
+   ],
+   "into": 0,
+   "odu": [
+    4545,
+    -450
+   ],
+   "note": "concealed in ceiling drop"
+  },
+  {
+   "id": "OU-LD-01",
+   "system": "ac",
+   "kind": "odu",
+   "room": "LD",
+   "at": [
+    4545,
+    -450
+   ],
+   "z": 0,
+   "rule": "R6.10",
+   "size": [
+    900,
+    350
+   ],
+   "into": 0
+  },
+  {
+   "id": "RF-LD-01",
+   "system": "ac",
+   "kind": "refrigerant",
+   "room": "LD",
+   "at": [
+    4545,
+    482
+   ],
+   "z": null,
+   "rule": "R6.10",
+   "path": [
+    [
+     4545,
+     482
+    ],
+    [
+     4545,
+     230
+    ],
+    [
+     4545,
+     -450
+    ]
+   ]
+  },
+  {
+   "id": "SG-LD-01",
+   "system": "ac",
+   "kind": "supply_grille",
+   "room": "LD",
+   "at": [
+    4545,
+    830
+   ],
+   "z": null,
+   "rule": "R6.10",
+   "path": [
+    [
+     6774,
+     830
+    ],
+    [
+     2316,
+     830
+    ]
+   ]
+  },
+  {
+   "id": "RG-LD-01",
+   "system": "ac",
+   "kind": "return_grille",
+   "room": "LD",
+   "at": [
+    5445,
+    530
+   ],
+   "z": null,
+   "rule": "R6.10",
+   "size": [
+    600,
+    300
+   ]
+  },
+  {
+   "id": "AD-MBR-01",
+   "system": "ac",
+   "kind": "ducted",
+   "room": "MBR",
+   "at": [
+    440,
+    5842
+   ],
+   "z": null,
+   "rule": "R6.10",
+   "size": [
+    1000,
+    300
+   ],
+   "into": 90,
+   "odu": [
+    -450,
+    5842
+   ],
+   "note": "concealed in ceiling drop"
+  },
+  {
+   "id": "OU-MBR-01",
+   "system": "ac",
+   "kind": "odu",
+   "room": "MBR",
+   "at": [
+    -450,
+    5842
+   ],
+   "z": 0,
+   "rule": "R6.10",
+   "size": [
+    900,
+    350
+   ],
+   "into": 90
+  },
+  {
+   "id": "RF-MBR-01",
+   "system": "ac",
+   "kind": "refrigerant",
+   "room": "MBR",
+   "at": [
+    440,
+    5842
+   ],
+   "z": null,
+   "rule": "R6.10",
+   "path": [
+    [
+     440,
+     5842
+    ],
+    [
+     230,
+     5842
+    ],
+    [
+     -450,
+     5842
+    ]
+   ]
+  },
+  {
+   "id": "SG-MBR-01",
+   "system": "ac",
+   "kind": "supply_grille",
+   "room": "MBR",
+   "at": [
+    730,
+    5842
+   ],
+   "z": null,
+   "rule": "R6.10",
+   "path": [
+    [
+     730,
+     5106
+    ],
+    [
+     730,
+     6579
+    ]
+   ]
+  },
+  {
+   "id": "RG-MBR-01",
+   "system": "ac",
+   "kind": "return_grille",
+   "room": "MBR",
+   "at": [
+    480,
+    4942
+   ],
+   "z": null,
+   "rule": "R6.10",
+   "size": [
+    600,
+    300
+   ]
+  },
+  {
+   "id": "AC-BR2-01",
+   "system": "ac",
+   "kind": "split",
+   "room": "BR2",
+   "at": [
+    8860,
+    5842
+   ],
+   "z": 2150,
+   "rule": "R6.10",
+   "wall": "I4",
+   "into": 270,
+   "size": [
+    900,
+    250
+   ],
+   "odu": [
+    8560,
+    8250
+   ]
+  },
+  {
+   "id": "AI-BR2-01",
+   "system": "power",
+   "kind": "ac_isolator",
+   "room": "BR2",
+   "at": [
+    8860,
+    6442
+   ],
+   "z": 2200,
+   "rule": "R6.10",
+   "wall": "I4",
+   "into": 270
+  },
+  {
+   "id": "OU-BR2-01",
+   "system": "ac",
+   "kind": "odu",
+   "room": "BR2",
+   "at": [
+    8560,
+    8250
+   ],
+   "z": 0,
+   "rule": "R6.10",
+   "size": [
+    900,
+    350
+   ],
+   "into": 180
+  },
+  {
+   "id": "RF-BR2-01",
+   "system": "ac",
+   "kind": "refrigerant",
+   "room": "BR2",
+   "at": [
+    8860,
+    5842
+   ],
+   "z": null,
+   "rule": "R6.10",
+   "path": [
+    [
+     8860,
+     5842
+    ],
+    [
+     8860,
+     7420
+    ],
+    [
+     8560,
+     7570
+    ],
+    [
+     8560,
+     8250
+    ]
+   ]
+  },
+  {
+   "id": "CW-KIT-01",
+   "system": "plumbing",
+   "kind": "cold",
+   "room": "KIT",
+   "at": [
+    11170,
+    5565
+   ],
+   "z": 550,
+   "rule": "R6.14",
+   "wall": "X2",
+   "into": 270
+  },
+  {
+   "id": "WW-KIT-01",
+   "system": "plumbing",
+   "kind": "waste",
+   "room": "KIT",
+   "at": [
+    11170,
+    5665
+   ],
+   "z": 450,
+   "rule": "R6.14",
+   "wall": "X2",
+   "into": 270
+  },
+  {
+   "id": "CW-MBT-01",
+   "system": "plumbing",
+   "kind": "cold",
+   "room": "MBT",
+   "at": [
+    4495,
+    7570
+   ],
+   "z": 550,
+   "rule": "R6.14",
+   "wall": "X3",
+   "into": 180
+  },
+  {
+   "id": "HW-MBT-01",
+   "system": "plumbing",
+   "kind": "hot",
+   "room": "MBT",
+   "at": [
+    4295,
+    7570
+   ],
+   "z": 550,
+   "rule": "R6.14",
+   "wall": "X3",
+   "into": 180
+  },
+  {
+   "id": "WW-MBT-01",
+   "system": "plumbing",
+   "kind": "waste",
+   "room": "MBT",
+   "at": [
+    4395,
+    7570
+   ],
+   "z": 450,
+   "rule": "R6.14",
+   "wall": "X3",
+   "into": 180
+  },
+  {
+   "id": "CW-CBT-01",
+   "system": "plumbing",
+   "kind": "cold",
+   "room": "CBT",
+   "at": [
+    5745,
+    4415
+   ],
+   "z": 550,
+   "rule": "R6.14",
+   "wall": "I3",
+   "into": 270
+  },
+  {
+   "id": "HW-CBT-01",
+   "system": "plumbing",
+   "kind": "hot",
+   "room": "CBT",
+   "at": [
+    5745,
+    4615
+   ],
+   "z": 550,
+   "rule": "R6.14",
+   "wall": "I3",
+   "into": 270
+  },
+  {
+   "id": "WW-CBT-01",
+   "system": "plumbing",
+   "kind": "waste",
+   "room": "CBT",
+   "at": [
+    5745,
+    4515
+   ],
+   "z": 450,
+   "rule": "R6.14",
+   "wall": "I3",
+   "into": 270
+  },
+  {
+   "id": "CW-MBT-02",
+   "system": "plumbing",
+   "kind": "cold",
+   "room": "MBT",
+   "at": [
+    4945,
+    7570
+   ],
+   "z": 150,
+   "rule": "R6.14",
+   "wall": "X3",
+   "into": 180
+  },
+  {
+   "id": "SL-MBT-01",
+   "system": "plumbing",
+   "kind": "soil",
+   "room": "MBT",
+   "at": [
+    5195,
+    7420
+   ],
+   "z": 0,
+   "rule": "R6.14"
+  },
+  {
+   "id": "CW-MBT-03",
+   "system": "plumbing",
+   "kind": "cold",
+   "room": "MBT",
+   "at": [
+    5195,
+    5915
+   ],
+   "z": 1000,
+   "rule": "R6.14",
+   "wall": "I5",
+   "into": 0,
+   "note": "mixer; head h2100"
+  },
+  {
+   "id": "HW-MBT-02",
+   "system": "plumbing",
+   "kind": "hot",
+   "room": "MBT",
+   "at": [
+    5395,
+    5915
+   ],
+   "z": 1000,
+   "rule": "R6.14",
+   "wall": "I5",
+   "into": 0,
+   "note": "mixer"
+  },
+  {
+   "id": "FT-MBT-01",
+   "system": "plumbing",
+   "kind": "floor_trap",
+   "room": "MBT",
+   "at": [
+    5295,
+    6365
+   ],
+   "z": 0,
+   "rule": "R6.14"
+  },
+  {
+   "id": "CW-CBT-02",
+   "system": "plumbing",
+   "kind": "cold",
+   "room": "CBT",
+   "at": [
+    3945,
+    5050
+   ],
+   "z": 150,
+   "rule": "R6.14",
+   "wall": "I2",
+   "into": 90
+  },
+  {
+   "id": "SL-CBT-01",
+   "system": "plumbing",
+   "kind": "soil",
+   "room": "CBT",
+   "at": [
+    4095,
+    5300
+   ],
+   "z": 0,
+   "rule": "R6.14"
+  },
+  {
+   "id": "CW-CBT-03",
+   "system": "plumbing",
+   "kind": "cold",
+   "room": "CBT",
+   "at": [
+    5395,
+    5800
+   ],
+   "z": 1000,
+   "rule": "R6.14",
+   "wall": "I5",
+   "into": 180,
+   "note": "mixer; head h2100"
+  },
+  {
+   "id": "HW-CBT-02",
+   "system": "plumbing",
+   "kind": "hot",
+   "room": "CBT",
+   "at": [
+    5195,
+    5800
+   ],
+   "z": 1000,
+   "rule": "R6.14",
+   "wall": "I5",
+   "into": 180,
+   "note": "mixer"
+  },
+  {
+   "id": "FT-CBT-01",
+   "system": "plumbing",
+   "kind": "floor_trap",
+   "room": "CBT",
+   "at": [
+    5295,
+    5358
+   ],
+   "z": 0,
+   "rule": "R6.14"
+  },
+  {
+   "id": "CW-BAL-01",
+   "system": "plumbing",
+   "kind": "cold",
+   "room": "BAL",
+   "at": [
+    11170,
+    1280
+   ],
+   "z": 1000,
+   "rule": "R6.14",
+   "wall": "P2",
+   "into": 270
+  },
+  {
+   "id": "WW-BAL-01",
+   "system": "plumbing",
+   "kind": "waste",
+   "room": "BAL",
+   "at": [
+    11170,
+    1480
+   ],
+   "z": 600,
+   "rule": "R6.14",
+   "wall": "P2",
+   "into": 270
+  },
+  {
+   "id": "HR-MBT-01",
+   "system": "plumbing",
+   "kind": "hot_run",
+   "room": "MBT",
+   "at": [
+    5295,
+    5915
+   ],
+   "z": null,
+   "rule": "R6.14",
+   "path": [
+    [
+     5295,
+     5915
+    ],
+    [
+     4295,
+     7570
+    ]
+   ]
+  },
+  {
+   "id": "HR-MBT-02",
+   "system": "plumbing",
+   "kind": "hot_run",
+   "room": "MBT",
+   "at": [
+    5295,
+    5915
+   ],
+   "z": null,
+   "rule": "R6.14",
+   "path": [
+    [
+     5295,
+     5915
+    ],
+    [
+     5395,
+     5915
+    ]
+   ]
+  },
+  {
+   "id": "HR-CBT-01",
+   "system": "plumbing",
+   "kind": "hot_run",
+   "room": "CBT",
+   "at": [
+    5295,
+    5800
+   ],
+   "z": null,
+   "rule": "R6.14",
+   "path": [
+    [
+     5295,
+     5800
+    ],
+    [
+     5745,
+     4615
+    ]
+   ]
+  },
+  {
+   "id": "HR-CBT-02",
+   "system": "plumbing",
+   "kind": "hot_run",
+   "room": "CBT",
+   "at": [
+    5295,
+    5800
+   ],
+   "z": null,
+   "rule": "R6.14",
+   "path": [
+    [
+     5295,
+     5800
+    ],
+    [
+     5195,
+     5800
+    ]
+   ]
+  },
+  {
+   "id": "FS-LD-01",
+   "system": "power",
+   "kind": "double_socket",
+   "room": "LD",
+   "at": [
+    1500,
+    1750
+   ],
+   "z": 0,
+   "wall": null,
+   "note": "Floor socket behind sofa (client request)",
+   "source": "override"
+  }
+ ]
+}

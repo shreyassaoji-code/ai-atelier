@@ -74,3 +74,25 @@ Font files live in `fonts/`. Code finds them by the family name stored inside ea
 - Measured plan: three dimension chains per side (openings, rooms + walls, overall); flagged values in `FLAG` with `*`; full "verify on site" list in the strip.
 - Presentation plan: procedural floor per room from `floors[]` + `finishes[]`; soft shadows offset to the bottom-right; furniture in fills; room names in tracked caps with area; no dimensions; legend shows floor swatches.
 - Code sheets: flooring `FL-n` (laying joints, direction arrow for planks, joint-centre mark for tiles), wall finishes `WFn` (a band on every face, tags with z range for features), furniture `Fn` (outlines, circled tags, W × D × H schedule).
+
+## 6. Engineering defaults (services)
+
+`python -m atelier.services projects/` writes `projects/<name>/services.json` from these rules, then applies `services_overrides.json`. Every generated item carries `"rule": "R6.n"`. Heights `hNNN` are mm from FFL to the centre of the device unless stated. Source: brief of 2026-11-25. Values marked **(default)** were not in the brief; they are Atelier defaults and must be confirmed.
+
+| Rule | Requirement (tick or fail) |
+|---|---|
+| R6.1 | One switchboard per room at **h1200**, **150** from the latch-side jamb of the room's entry door, on the room side. Rooms without a door: at the jamb of their opening or removed-wall stretch. |
+| R6.2 | Wet rooms (bath, toilet): switchboard **outside** the room, latch side, h1200. All wet-room devices **IP44**. |
+| R6.3 | General sockets **h300**: one per wall face ≥ **1800** long in living, dining, bedrooms and study, at the centre of the longest free stretch (≥ 600, clear of openings and joinery). **(default spacing)** |
+| R6.4 | Each bedside: socket + USB at **h600** and a **2-way** switch at **h750**, on the wall behind it; the 2-way switches the room's downlights with the door switch. |
+| R6.5 | Each desk: double socket + LAN at **h850** on the wall behind it. |
+| R6.6 | Each TV unit: TV power (double socket) + LAN at **h1100** **(default height)**, centred on the unit. |
+| R6.7 | Kitchen worktop: socket at **h1100** every **~900** along each base run, none within **150** of a sink or hob module. |
+| R6.8 | Wet rooms: geyser point at **h2000** **(default)** on the wall nearest the shower; exhaust in the external ventilator, or ceiling exhaust when the room has no external wall; IP44 socket at **h1100** beside the vanity. Washing machine: IP44 socket **h1100**. |
+| R6.9 | Main entry: DB at **h1500** **(default)** on the hinge side, **400** from the jamb; VDP at **h1400** **(default)** on the latch side beyond the switch; router at **h2100** **(default)** beside the DB. |
+| R6.10 | AC in living and bedrooms: **ducted** if the room has a feature wall **and** a stepped (tray) ceiling; otherwise **split**. Split: indoor unit top at **h2150** **(default)** on the face opposite the feature wall (or the longest external face), centred on its longest free stretch; outdoor unit outside the nearest external wall. Ducted: unit in the ceiling drop next to an external wall, linear supply along the step, return grille by the unit. AC isolator at **h2200** **(default)** beside a split unit. |
+| R6.11 | One **1200** sweep fan centred (polygon centroid) in each bedroom and living room. |
+| R6.12 | Downlights on a **1200** grid **(default pitch)** centred on the room, at least **500** from walls, **450** from joinery, **700** from the fan, **300** from ceiling step edges. |
+| R6.13 | One cove light along each ceiling step, **100** into the dropped band. |
+| R6.14 | Plumbing **(default heights)**: basin and sink cold/hot **h550**, waste **h450**; WC cold **h150**, soil at floor; shower mixer **h1000**, head **h2100**, floor trap at its centre; washing machine cold **h1000**, waste **h600**; hot water runs from each geyser to its room's mixers. |
+| R6.15 | `services_overrides.json` is applied last: `remove` (ids), `move` (id + new `at`/`z`), `add` (full items). An override naming an unknown id is an error. |

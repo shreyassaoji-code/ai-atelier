@@ -49,6 +49,7 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `new_walls[]` | wall | as survey walls |
 | `new_openings[]` | opening | as survey openings; `wall` may be a new wall |
 | `rooms[]` | object | by `id`: overrides survey rooms (any field), or adds a new room (needs `poly`). Design-only field: `wall_finish` (finish code for every wall face of the room unless a `wall_features[]` entry covers it) |
+| `sanitary[]` | object | `id`, `room`, `kind`, `at` (centre), `size` `[w, d]`, `facing` (like furniture; validated the same way) |
 | `furniture[]` | object | `id`, `room`, `kind`, `at` (centre of box), `size` `[w, d, h]` (w across the front, d front-to-back), `facing` (direction the front faces), `label` |
 | `joinery[]` | object | `id`, `room`, `kind`, `wall` (host), `offset`, `width`, `depth`, `z` (bottom, default 0), `height`, `rows[]` (bottom to top) |
 | `joinery[].rows[]` | object | `height`, `modules[]`: `{"w", "type", "label"}`. **Σ module w = joinery width**, **Σ row heights = height** |
@@ -73,6 +74,7 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `opening.hinge` | `start` `end` `both` (double doors) `none` |
 | `room.type` | `living` `dining` `living_dining` `kitchen` `bedroom` `master_bedroom` `bath` `toilet` `utility` `balcony` `foyer` `passage` `study` `puja` `store` `dress` `shaft` |
 | `furniture.kind` | `sofa` `armchair` `coffee_table` `side_table` `dining_table` `chair` `bed` `bedside` `desk` `rug` `console` `tv` `plant` `other` |
+| `sanitary.kind` | `wc` `shower` `bathtub` `washing_machine` |
 | `joinery.kind` | `wardrobe` `tv_unit` `kitchen_base` `kitchen_wall` `tall_unit` `vanity` `shoe_rack` `crockery` `study_unit` `bookshelf` `puja_unit` `other` |
 | `module.type` | `shutter` `glass_shutter` `drawer` `open` `loft` `appliance` `sink` `hob` `panel` `filler` |
 | `step.light` | `none` `cove` `profile` |
@@ -82,6 +84,21 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `floor.start` | `centre` `door` `corner` |
 | `finish.kind` | `tile` `stone` `wood` `laminate` `veneer` `paint` `wallpaper` `fabric` `metal` `glass` `mirror` `gypsum` |
 | `view.kind` | `plan` `furniture_plan` `rcp` `floor_plan` `electrical` `plumbing` `elevation` `section` `detail` `room_board` `joinery_board` `render` |
+
+## 3a. services.json (written by `atelier.services`, not by agents) and services_overrides.json (written by agents)
+
+`services.json`: `{"schema": "atelier/services@1", "rules": "agents/STANDARDS.md §6", "items": [...]}`. Each item:
+`id` (stable: `<PREFIX>-<room>-<nn>`), `system` (`power` `lighting` `switching` `plumbing` `ac`), `kind`, `room`, `at` `[x, y]` (on the wall face for wall devices), `z` (mm, or `null` for ceiling items), `wall` (host wall id or `null`), `rule` (`R6.n`) or `source: "override"`, optional `ip`, `controls` (ids, switches only), `path` (polyline, cove and pipe runs), `size`, `odu` (outdoor unit point), `note`.
+
+| `kind` per system | Values |
+|---|---|
+| power | `socket` `socket_usb` `double_socket` `lan` `tv_power` `worktop_socket` `db` `vdp` `router` `geyser_point` `ac_isolator` `wm_socket` `ip44_socket` |
+| lighting | `downlight` `fan` `cove` `exhaust` |
+| switching | `switchboard` `switch_2way` |
+| plumbing | `cold` `hot` `waste` `soil` `floor_trap` `geyser` `hot_run` |
+| ac | `split` `ducted` `odu` `supply_grille` `return_grille` `refrigerant` |
+
+`services_overrides.json`: `{"remove": [id, ...], "move": [{"id", "at", "z"}], "add": [item, ...]}`.
 
 ## 4. Example: survey.json (one room, abridged)
 

@@ -95,7 +95,7 @@ class Frame:
         self.y += 1.0
         self.rule()
 
-    def lines(self, rows, color=None, max_chars=58, limit_y=None):
+    def lines(self, rows, color=None, max_chars=58, limit_y=None, indent=7):
         """Wrapped text rows: (prefix, text, prefix_color)."""
         limit_y = limit_y or T.DRAW[3] - 30
         for prefix, txt, pc in rows:
@@ -114,7 +114,7 @@ class Frame:
                     return
                 if first and prefix:
                     self.sh.text(T.STRIP_X, self.y, prefix, sans("legend", 600), pc or T.INK)
-                self.sh.text(T.STRIP_X + (7 if prefix else 0), self.y, c, sans("legend"), color or T.INK)
+                self.sh.text(T.STRIP_X + (indent if prefix else 0), self.y, c, sans("legend"), color or T.INK)
                 self.y += LINE
                 first = False
 
@@ -422,8 +422,8 @@ def partitions(m, no, total):
 import math  # noqa: E402
 
 from atelier import texture as TX  # noqa: E402
-from atelier.symbols import (draw_furniture, draw_joinery, furniture_footprint_page,  # noqa: E402
-                             furniture_parts, _to_plan)
+from atelier.symbols import (draw_furniture, draw_joinery, draw_sanitary,  # noqa: E402
+                             furniture_footprint_page, furniture_parts, _to_plan)
 
 RASTER_DPI = 240
 
@@ -498,7 +498,7 @@ def presentation(m, no, total):
         (x0, y1), (x1, y0) = pv.P(b[0], b[1]), pv.P(b[2], b[3])
         sh.image(arr, x0, y0, x1, y1, clip_rings=pv.rings(poly), z=1)
     # soft shadows from furniture, joinery and walls, clipped to the floors
-    casters = [furniture_footprint_page(pv, f) for f in m.furniture if f.get("kind") != "rug"]
+    casters = [furniture_footprint_page(pv, f) for f in list(m.furniture) + list(m.sanitary) if f.get("kind") != "rug"]
     for j in m.joinery:
         g = geom.joinery_polygon(j, m.wall(j["wall"]), m.room(j["room"]))
         casters.append([pv.P(*c) for c in g.exterior.coords[:-1]])
@@ -510,9 +510,12 @@ def presentation(m, no, total):
         draw_furniture(pv, f, "present")
     for j in m.joinery:
         draw_joinery(pv, j, m.wall(j["wall"]), m.room(j["room"]), "present")
+    for s_ in m.sanitary:
+        draw_sanitary(pv, s_, "present")
     base_plan(pv, m)
     thresholds(pv, m)
-    avoid = unary_union([_to_plan(f, furniture_parts(f)[0][0]) for f in m.furniture if f.get("kind") != "rug"]
+    avoid = unary_union([_to_plan(f, furniture_parts(f)[0][0]) for f in list(m.furniture) + list(m.sanitary)
+                         if f.get("kind") != "rug"]
                         + [geom.joinery_polygon(j, m.wall(j["wall"]), m.room(j["room"])) for j in m.joinery]
                         + [swings(m.walls, m.openings)])
     for r in m.rooms:
@@ -772,23 +775,7 @@ def flooring(m, no, total):
 
 
 # ---- wall finishes ---------------------------------------------------------------
-def edge_pieces(room, walls):
-    """Room edges split into the stretches that lie on each wall's face."""
-    from shapely.geometry import LineString as LS
-    out = []
-    for e in geom.room_edges(room, walls):
-        seg = LS([e.a, e.b])
-        ux, uy = (e.b[0] - e.a[0]) / e.length, (e.b[1] - e.a[1]) / e.length
-        for w in walls:
-            part = seg.intersection(geom.wall_polygon(w).buffer(2))
-            for g in getattr(part, "geoms", [part]):
-                if g.is_empty or g.geom_type != "LineString" or g.length < 20:
-                    continue
-                p0, p1 = g.coords[0], g.coords[-1]
-                if (p1[0] - p0[0]) * ux + (p1[1] - p0[1]) * uy < 0:
-                    p0, p1 = p1, p0
-                out.append(geom.Edge(e.n, p0, p1, g.length, e.facing, w["id"]))
-    return out
+edge_pieces = geom.room_faces
 
 
 def wf_colours(codes):
@@ -897,6 +884,8 @@ def furniture_plan(m, no, total):
         draw_joinery(pv, j, m.wall(j["wall"]), m.room(j["room"]), "line", label=True)
     for f in sorted(m.furniture, key=lambda f: f.get("kind") != "rug"):
         draw_furniture(pv, f, "line")
+    for s_ in m.sanitary:
+        draw_sanitary(pv, s_, "line")
     placed = []
     r_tag = 2.1
     for f in m.furniture:
@@ -946,4 +935,7 @@ SHEET_DEFS = OrderedDict(
     wall_finishes=(wall_finishes, "Wall finish plan", True),
     furniture=(furniture_plan, "Furniture plan", True),
 )
+from atelier import sheets_services as _svc  # noqa: E402  (defined after this module's names exist)
+
+SHEET_DEFS.update(_svc.SHEET_DEFS)
 SHEETS = OrderedDict((k, v[0]) for k, v in SHEET_DEFS.items())
