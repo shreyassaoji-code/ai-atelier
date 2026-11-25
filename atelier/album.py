@@ -41,7 +41,8 @@ def _family(m, fam):
         from atelier.views3d import board_rooms
         return [r["id"] for r in board_rooms(m)]
     if fam == "elevation":
-        return [v["id"] for v in m.views if v.get("kind") == "elevation"]
+        from atelier.elev_detail import elevation_views
+        return [v["id"] for v in elevation_views(m)]
     if fam == "joinery":
         return [j["id"] for j in m.joinery]
     raise KeyError(fam)

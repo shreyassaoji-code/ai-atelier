@@ -44,12 +44,24 @@ class Face:
         self.wall = m.wall(view["wall"])
         a, b = self.f.a, self.f.b
         self.ux, self.uy = (b[0] - a[0]) / self.L, (b[1] - a[1]) / self.L
+        self.full_L = self.L
+        self.x_from = 0.0                                  # this part starts this far from the wall's left corner
+        self.cut_left = self.cut_right = False
+        if view.get("range"):                              # part of a long wall: x range from the left corner
+            xa, xb = view["range"]
+            ta, tb = self.L - xb, self.L - xa              # x = L - t, t measured from face end a
+            pa = (a[0] + self.ux * ta, a[1] + self.uy * ta)
+            pb = (a[0] + self.ux * tb, a[1] + self.uy * tb)
+            self.cut_right, self.cut_left = ta > 1, xa > 1
+            self.f = geom.Edge(self.f.n, pa, pb, xb - xa, self.f.facing, self.f.wall)
+            self.L, self.x_from = xb - xa, xa
         cdef = next((c for c in m.ceilings if c["room"] == self.room["id"]), None)
         self.soffit = m.levels.get("soffit", 3000)
         self.sflag = m.is_flagged(dict(m.levels), "soffit")
         self.fcl = cdef["z"] if cdef and cdef.get("z") else None
-        self.t_left = self._end_thickness(self.f.b, (self.ux, self.uy))      # viewer's left = face end b
-        self.t_right = self._end_thickness(self.f.a, (-self.ux, -self.uy))
+        self.t_left = 0 if self.cut_left else self._end_thickness(self.f.b, (self.ux, self.uy))   # viewer's left = end b
+        self.t_right = 0 if self.cut_right else self._end_thickness(self.f.a, (-self.ux, -self.uy))
+        self.parapet = self.wall.get("kind") == "parapet"
 
     def x_of(self, p):
         """Plan point -> x from the viewer's left corner."""
@@ -64,6 +76,14 @@ class Face:
         others = unary_union([geom.wall_polygon(w) for w in self.m.walls if w["id"] != self.wall["id"]])
         hit = seg.intersection(others)
         return round(hit.length) if not hit.is_empty else 0
+
+    def end_height(self, side):
+        """Height of the wall cut at the left / right end: parapets stop at their height."""
+        p, d = (self.f.b, (self.ux, self.uy)) if side == "left" else (self.f.a, (-self.ux, -self.uy))
+        seg = LineString([(p[0] - d[0] * 2, p[1] - d[1] * 2), (p[0] + d[0] * 600, p[1] + d[1] * 600)])
+        hs = [w.get("height", PARAPET_H) if w.get("kind") == "parapet" else self.soffit
+              for w in self.m.walls if w["id"] != self.wall["id"] and seg.intersects(geom.wall_polygon(w))]
+        return max(hs) if hs else self.soffit
 
     def points(self, items):
         out = []
@@ -94,6 +114,8 @@ class Face:
                     upper.append(dict(md, n=f"{r_i}.{k}", xa=xa, xb=xb, row=r_i))
                     o += md["w"]
             xa, xb = sorted((self.x_on_wall(j["offset"]), self.x_on_wall(j["offset"] + j["width"])))
+            if xb <= 1 or xa >= self.L - 1:
+                continue
             out.append(dict(j=j, mods=mods, upper=upper, xa=xa, xb=xb))
         return out
 
@@ -111,8 +133,67 @@ class Face:
         for wf in self.m.wall_features:
             if wf["wall"] == self.wall["id"] and wf["room"] == self.room["id"]:
                 xa, xb = sorted((self.x_on_wall(wf["offset"]), self.x_on_wall(wf["offset"] + wf["width"])))
+                if xb <= 1 or xa >= self.L - 1:                # on another part of a split wall
+                    continue
                 out.append(dict(wf, xa=max(xa, 0), xb=min(xb, self.L)))
         return out
+
+
+# ------------------------------------------------------------------ every wall of every room (E5.1)
+MIN_FACE = 600            # shorter faces are wall-junction slivers
+MAX_PART = 4600           # longest wall stretch one 1:25 sheet holds beside its tags and markers
+PARAPET_H = 1050          # (default) parapet height when the wall has no `height`
+
+
+def _split_points(F, n):
+    """n-1 break positions near equal parts, moved onto clear wall (no joinery, opening or service point)."""
+    busy = [(j["xa"] - 120, j["xb"] + 120) for j in F.joinery()] + \
+           [(o["xa"] - 120, o["xb"] + 120) for o in F.openings()] + \
+           [(p["x"] - 250, p["x"] + 250) for p in F.points(load_services(F.m))]
+    out = []
+    for k in range(1, n):
+        want = F.L * k / n
+        cands = [want + d for d in range(0, int(F.L / 2), 50) for d in (d, -d)]
+        x = next((c for c in cands if 300 < c < F.L - 300 and not any(a < c < b for a, b in busy)), want)
+        out.append(round(x))
+    return out
+
+
+def elevation_views(m):
+    """Every elevation sheet: design views[] of kind elevation first (in their room's place), then each
+    remaining wall face of every room. Faces longer than MAX_PART become parts -p1, -p2 … with match lines."""
+    data = [v for v in m.views if v.get("kind") == "elevation"]
+    used = {(v["room"], v["wall"]) for v in data}
+    out = []
+    for r in m.rooms:
+        seen = set()
+        for f in geom.room_faces(r, m.walls):
+            if f.wall in seen:
+                continue
+            best = max((x for x in geom.room_faces(r, m.walls) if x.wall == f.wall), key=lambda x: x.length)
+            if best.length < MIN_FACE:
+                continue
+            seen.add(f.wall)
+            v = next((d for d in data if d["room"] == r["id"] and d["wall"] == f.wall), None) or \
+                {"id": f"E-{r['id']}-{f.wall}", "kind": "elevation", "room": r["id"], "wall": f.wall, "scale": 25,
+                 "title": f"{r.get('name', r['id'])} · wall {f.wall}", "auto": True}
+            out += _parts(m, v)
+    for d in data:                                     # data views on faces the loop did not reach
+        if not any(o["id"].startswith(d["id"]) for o in out):
+            out += _parts(m, d)
+    del used
+    return out
+
+
+def _parts(m, v):
+    F = Face(m, v)
+    if F.L <= MAX_PART:
+        return [v]
+    n = -(-int(F.L) // MAX_PART)
+    xs = [0] + _split_points(F, n) + [round(F.L)]
+    base = v.get("title") or v["id"]
+    return [dict(v, id=f"{v['id']}-p{k}", range=[xs[k - 1], xs[k]], part=(k, n),
+                 title=f"{base} · part {k} of {n}") for k in range(1, n + 1)]
 
 
 # ------------------------------------------------------------------ drawing helpers
@@ -269,12 +350,26 @@ def draw_elevation(sh, m, view, ex0, ey0):
     # slabs, end walls (E5.11), false ceiling
     E.rect(-F.t_left, L + F.t_right, soff, soff + D["slab"], fill=T.PAPER, edge=T.INK, hatch="////", z=3)
     E.rect(-F.t_left, L + F.t_right, -D["floor_slab"], 0, fill=T.PAPER, edge=T.INK, hatch="////", z=3)
-    E.rect(-F.t_left, 0, 0, soff, fill=T.POCHE, z=9)
-    E.rect(L, L + F.t_right, 0, soff, fill=T.POCHE, z=9)
+    E.rect(-F.t_left, 0, 0, F.end_height("left"), fill=T.POCHE, z=9)
+    E.rect(L, L + F.t_right, 0, F.end_height("right"), fill=T.POCHE, z=9)
     if F.fcl:
         E.rect(0, L, F.fcl, soff, fill=T.LIGHT, z=2)
         E.line([(0, F.fcl), (L, F.fcl)], T.INK, LW_CUT, z=6)
     E.line([(0, 0), (L, 0)], T.INK, LW_CUT, z=6)
+    for x, cut in ((0, F.cut_left), (L, F.cut_right)):          # match lines where a long wall is split
+        if cut:
+            zz = [-D["floor_slab"], soff * 0.45, soff * 0.47, soff * 0.53, soff * 0.55, soff + D["slab"]]
+            dx = [0, 0, -60, 60, 0, 0]
+            E.line([(x + d, z_) for d, z_ in zip(dx, zz)], T.INK, LW_THIN, z=10)
+            sh.text(E.X(x) + (1.6 if x == 0 else -1.6), E.Z(soff * 0.25), "MATCH LINE", sans("dim", 600), T.GREY,
+                    rotation=90, ha="center", va="center", zorder=10)
+    if F.parapet:                                               # open above a parapet
+        ph = F.wall.get("height", PARAPET_H)
+        pfl = "height" not in F.wall
+        E.rect(0, L, ph, top_fc, fill=TX.hexc(TX.mix(T.BLUE, T.PAPER, 0.86)), z=2)
+        E.line([(0, ph), (L, ph)], T.INK, LW_CUT, z=6)
+        sh.text(E.X(L / 2), E.Z(ph) - 2.0, f"OPEN ABOVE PARAPET +{ph}" + ("*" if pfl else ""), sans("dim", 600),
+                T.FLAG if pfl else T.GREY, ha="center", zorder=7)
 
     # wall features (tile pattern), clipped round openings
     for wf in FW:
@@ -576,7 +671,7 @@ def key_plan(sh, m, F, x0, y0, w):
 
 
 def elevation_sheet(m, no, total, view_id):
-    view = next(v for v in m.views if v.get("id") == view_id)
+    view = next(v for v in elevation_views(m) if v.get("id") == view_id)
     sh = Sheet()
     room = m.room(view["room"])
     title = f"Elevation {view_id}"

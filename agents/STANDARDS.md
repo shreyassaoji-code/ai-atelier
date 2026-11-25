@@ -150,7 +150,7 @@ Source: brief of 2026-11-25. No reference sheet received yet: layout to be match
 
 | Rule | Requirement (tick or fail) |
 |---|---|
-| E5.1 | Every wall face of every room at **1:25**, viewed from inside the room; x measured from the viewer's **left corner**. One row of elevations per sheet. |
+| E5.1 | Every wall face of every room at **1:25**, viewed from inside the room; x measured from the viewer's **left corner**. One row of elevations per sheet. Sheets come from `views[]` (kind `elevation`) first, then one per remaining wall face of every room (`E-<room>-<wall>`); faces under **600** are junction slivers and skipped **(default)**. A face longer than **4600** **(default: what one sheet holds beside its tags)** is split into parts `-p1`, `-p2`… at clear wall (no joinery, opening or service point within 250), with MATCH LINE breaks. Parapet walls are drawn to their `height` (**1050** **(default)**, flagged `*`) and open above; end walls are cut at their own height. |
 | E5.2 | Every service point on the face drawn as a **real plate at true size and height** **(default plates: 86 × 86 single, 146 × 86 double/TV, 100 × 110 IP44, DB 350 × 450, VDP 130 × 200)**; label inside: 6A / 16A / DATA / TV / IP44 / VDP / DB. |
 | E5.3 | Plumbing: **H** red (`FLAG`), **C** blue (`BLUE`), **D** drain grey (`GREY`), WC soil, mixer above each sink, shower head. |
 | E5.4 | Each point dimensioned **twice**: height from FFL to its centre, and a chain from the left corner. |
