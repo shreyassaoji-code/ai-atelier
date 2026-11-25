@@ -93,6 +93,26 @@ Source: brief of 2026-11-25. Values marked **(default)** are Atelier defaults, n
 | C3.10 | Cove geometry **(default)**: trough **150** wide on the raised side of the step edge; upstand **75** or half the step, whichever is less; board **12.5**; GI ceiling section @ **450** c/c; rods @ **1200** c/c; slab **150**; LED **24 V, 2700 K** in aluminium profile with opal diffuser. |
 | C3.11 | The slab soffit comes from `levels.soffit`; when flagged it prints with `*` on both sheets. |
 
+## 5. Elevation detail (1:25)
+
+Source: brief of 2026-11-25. No reference sheet received yet: layout to be matched to the studio's kitchen sink wall. **(default)** = Atelier default.
+
+| Rule | Requirement (tick or fail) |
+|---|---|
+| E5.1 | Every wall face of every room at **1:25**, viewed from inside the room; x measured from the viewer's **left corner**. One row of elevations per sheet. |
+| E5.2 | Every service point on the face drawn as a **real plate at true size and height** **(default plates: 86 × 86 single, 146 × 86 double/TV, 100 × 110 IP44, DB 350 × 450, VDP 130 × 200)**; label inside: 6A / 16A / DATA / TV / IP44 / VDP / DB. |
+| E5.3 | Plumbing: **H** red (`FLAG`), **C** blue (`BLUE`), **D** drain grey (`GREY`), WC soil, mixer above each sink, shower head. |
+| E5.4 | Each point dimensioned **twice**: height from FFL to its centre, and a chain from the left corner. |
+| E5.5 | A red (`FLAG`) wiring drop from the false ceiling to every electrical point. |
+| E5.6 | Material tags with leaders: wall finish `WFn`, feature wall `FWn`, joinery board `MBn`, worktop `WTn`, floor `FL-n`. |
+| E5.7 | Joinery modules numbered `J<n>.<module>` in data order; shutters show the swing (dashed, apex at the hinge), drawers their fronts, plinth **100** and worktop **40** **(default)**; sinks show bowl and mixer, hobs and appliances their outline. |
+| E5.8 | Vertical code rail (height zones) and horizontal code rail (zones along the wall); finish key with swatches of every code on the sheet. |
+| E5.9 | Level markers in metres: `FFL ±0.000`, `FCL +x.xxx`, `SOFFIT +x.xxx` (flagged with `*` when unverified). |
+| E5.10 | Skirting drawn **only** on bare wall (not behind joinery, not across openings), at the floor's `skirting` height. |
+| E5.11 | Walls cut at both ends in poche, at their real thickness. |
+| E5.12 | Detail bubbles: 1 worktop/backsplash, 2 plinth, 3 sink → **DT-01**; 4 window sill, 5 shutter edge, 6 ceiling junction → **DT-02**. |
+| E5.13 | Chains: a vertical level chain, a horizontal module chain and an overall dimension; a room key plan marking the wall and view direction; a points schedule (id, type, height, x). |
+
 ## 6. Engineering defaults (services)
 
 `python -m atelier.services projects/` writes `projects/<name>/services.json` from these rules, then applies `services_overrides.json`. Every generated item carries `"rule": "R6.n"`. Heights `hNNN` are mm from FFL to the centre of the device unless stated. Source: brief of 2026-11-25. Values marked **(default)** were not in the brief; they are Atelier defaults and must be confirmed.

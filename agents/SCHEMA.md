@@ -51,7 +51,7 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `rooms[]` | object | by `id`: overrides survey rooms (any field), or adds a new room (needs `poly`). Design-only field: `wall_finish` (finish code for every wall face of the room unless a `wall_features[]` entry covers it) |
 | `sanitary[]` | object | `id`, `room`, `kind`, `at` (centre), `size` `[w, d]`, `facing` (like furniture; validated the same way) |
 | `furniture[]` | object | `id`, `room`, `kind`, `at` (centre of box), `size` `[w, d, h]` (w across the front, d front-to-back), `facing` (direction the front faces), `label` |
-| `joinery[]` | object | `id`, `room`, `kind`, `wall` (host), `offset`, `width`, `depth`, `z` (bottom, default 0), `height`, `rows[]` (bottom to top) |
+| `joinery[]` | object | `id`, `room`, `kind`, `wall` (host), `offset`, `width`, `depth`, `z` (bottom, default 0), `height`, `rows[]` (bottom to top), optional `finish` (board code `MBn`) and `worktop` (code `WTn`) |
 | `joinery[].rows[]` | object | `height`, `modules[]`: `{"w", "type", "label"}`. **Σ module w = joinery width**, **Σ row heights = height** |
 | `ceilings[]` | object | `room`, `z` (lowest false-ceiling level, mm above FFL; omit `ceilings` entry = no false ceiling), `steps[]`, `domes[]`, `lights[]` |
 | `ceilings[].steps[]` | object | a raised area: `inset` (mm in from the room polygon: full tray) **or** `poly` (any area inside the room: partial tray), `z` (its level), `light` (`none` `cove` `profile`). Steps nest: list outer before inner; a point takes the `z` of the last step containing it. |
@@ -59,8 +59,8 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `ceilings[].lights[]` | object | design fittings (downlights are placed by rule, STANDARDS §6): `kind`, `at` (pendant, chandelier, spotlight) or `path` (track, strip), `note` |
 | `wall_features[]` | object | `id`, `room`, `wall`, `offset`, `width`, `z0`, `z1`, `kind`, `finish` |
 | `floors[]` | object | `room`, `finish`, `pattern`, `module` `[w, l]` (plank or tile; mm), `start`, `skirting` (height), `angle` (optional, degrees anticlockwise from east; planks run along it) |
-| `finishes[]` | object | `code` (`FL-n` floors, `WFn` walls), `kind`, `name`, `maker`, `ref` (catalogue code). No colour values: material tones are mixed from `atelier/theme.py` tokens by `atelier/texture.py`. |
-| `views[]` | object | `id`, `kind`, `room` (optional), `wall` (elevations), `scale` (e.g. 25 for 1:25), `title`; sections also `line` `[[x, y], [x, y]]` (cut line) and `look` (`N` `E` `S` `W`: direction the viewer looks) |
+| `finishes[]` | object | `code` (`FL-n` floors, `WFn` walls, `MBn` joinery boards, `WTn` worktops), `kind`, `name`, `maker`, `ref` (catalogue code). No colour values: material tones are mixed from `atelier/theme.py` tokens by `atelier/texture.py`. |
+| `views[]` | object | `id`, `kind`, `room` (optional), `wall` (elevations), `scale` (e.g. 25 for 1:25), `title`; sections also `line` `[[x, y], [x, y]]` (cut line) and `look` (`N` `E` `S` `W`: direction the viewer looks); elevations `room` + `wall` (the face of that wall in that room) |
 | `cameras[]` | object | `id`, `room`, `eye` `[x,y,z]`, `target` `[x,y,z]`, `lens` (mm, 35 mm equivalent) |
 | `notes[]` | object | `id`, `applies` (`"all"`, room id or view id), `text` |
 

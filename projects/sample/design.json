@@ -483,7 +483,9 @@
             }
           ]
         }
-      ]
+      ],
+      "finish": "MB1",
+      "worktop": "WT1"
     },
     {
       "id": "J4",
@@ -513,7 +515,9 @@
             }
           ]
         }
-      ]
+      ],
+      "finish": "MB1",
+      "worktop": "WT1"
     },
     {
       "id": "J5",
@@ -935,6 +939,20 @@
       "name": "Lime-wash texture paint",
       "maker": null,
       "ref": null
+    },
+    {
+      "code": "MB1",
+      "kind": "laminate",
+      "name": "BWP ply carcass, matt laminate shutters",
+      "maker": null,
+      "ref": null
+    },
+    {
+      "code": "WT1",
+      "kind": "stone",
+      "name": "Quartz worktop, 20 on 20 ply, eased edge",
+      "maker": null,
+      "ref": null
     }
   ],
   "views": [
@@ -959,6 +977,14 @@
       "look": "N",
       "scale": 50,
       "title": "Section B\u2013B"
+    },
+    {
+      "id": "E-KIT-1",
+      "kind": "elevation",
+      "room": "KIT",
+      "wall": "X2",
+      "scale": 25,
+      "title": "Kitchen \u00b7 sink wall"
     }
   ],
   "cameras": [],

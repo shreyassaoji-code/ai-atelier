@@ -44,14 +44,23 @@ def main(argv=None):
         print(f"services.json missing: run  python -m atelier.services {a.project}")
         return 1
     sc = fit_scale(envelope_bounds(m.walls))
-    m.album = [(i, n, SHEET_DEFS[n][1], f"1:{sc}" if SHEET_DEFS[n][2] else "—") for i, n in enumerate(names, 1)]
+    def info(n):
+        if n.startswith("elevation:"):
+            return (f"Elevation {n.split(':', 1)[1]}", "1:25")
+        return (SHEET_DEFS[n][1], f"1:{sc}" if SHEET_DEFS[n][2] else "—")
+    m.album = [(i, n, *info(n)) for i, n in enumerate(names, 1)]
     out = a.project / "out" / "sheets"
     built = []
     for i, name in enumerate(names, 1):
         if a.sheet and name not in a.sheet:
             continue
-        sh = SHEETS[name](m, i, len(names))
-        pdf, png = out / f"{i:02d}-{name}.pdf", out / f"{i:02d}-{name}.png"
+        if name.startswith("elevation:"):
+            from atelier.elev_detail import elevation_sheet
+            sh = elevation_sheet(m, i, len(names), name.split(":", 1)[1])
+        else:
+            sh = SHEETS[name](m, i, len(names))
+        safe = name.replace(":", "-")
+        pdf, png = out / f"{i:02d}-{safe}.pdf", out / f"{i:02d}-{safe}.png"
         sh.save(pdf, png, a.dpi)
         built.append(pdf)
         print(f"{name} ✓ {png}")
