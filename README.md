@@ -30,7 +30,7 @@ python -c "import shapely, matplotlib, pypdf, PIL, numpy, bpy"
 ## Build
 
 ```bash
-python -m atelier.build projects/             # every project: validate -> services -> 3D -> album
+python -m atelier.build projects/             # every project: validate -> services -> 3D -> album (-v: every step)
 python -m atelier.build projects/sample --sheet room:KIT --no-render   # one page, spliced into the album
 ```
 

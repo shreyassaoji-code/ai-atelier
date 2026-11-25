@@ -29,7 +29,8 @@ from atelier.validate import check
 
 def build_project(root: Path, a) -> int:
     t0 = time.time()
-    print(f"== {root}")
+    say = print if a.verbose else (lambda *x, **k: None)
+    say(f"== {root}")
     m = load(root, a.design)
     rep = check(m)                                                     # 1 validate
     if rep.errors:
@@ -37,7 +38,7 @@ def build_project(root: Path, a) -> int:
             print(f"  {c:18} {msg}")
         print(f"  validate ✗ {len(rep.errors)} errors: fix the data; nothing built")
         return 1
-    print(f"  validate ✓ 0 errors, {len(rep.warnings)} warnings")
+    say(f"  validate ✓ 0 errors, {len(rep.warnings)} warnings")
     data, _rep, errs = services.build(root)                            # 2 services
     if errs:
         for e in errs:
@@ -45,22 +46,36 @@ def build_project(root: Path, a) -> int:
         print("  services ✗ override errors; nothing built")
         return 1
     (root / "services.json").write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n")
-    print(f"  services ✓ {len(data['items'])} items")
+    print(f"services ✓" + (f" {len(data['items'])} items" if a.verbose else ""))
     m = load(root, a.design)
     if a.no_render:                                                    # 3 3D
-        print("  3D skipped (--no-render)")
+        say("3D skipped (--no-render)")
     else:
         try:
             from atelier.render import render
-            render(root)
+            import contextlib
+            import io
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf if not a.verbose else sys.stdout):
+                render(root)
+            print("3D ✓")
         except Exception as e:  # noqa: BLE001 - no renders is honest (boards say so), not fatal
             print(f"  3D ✗ {e}: room boards will show RENDER NOT PRODUCED")
     try:                                                               # 4 album
-        made, failed, verdict = album.build(m, root, a.sheet, a.dpi)
+        made, failed, verdict = album.build(m, root, a.sheet, a.dpi, log=say if not a.verbose else print)
     except ValueError as e:
-        print(f"  album ✗ {e}")
+        print(f"album ✗ {e}")
         return 1
-    print(f"  album {'✓' if not failed else '✗'} {verdict}  ({time.time() - t0:.0f}s)")
+    for i, name, e in failed:
+        print(f"  page {i:02d} {name} FAILED: {e}")
+    pdf = root / "out" / "album.pdf"
+    if failed:
+        print(f"album ✗ {verdict}")
+    elif a.sheet:
+        print(f"album ✓ {pdf} ({verdict})")
+    else:
+        print(f"album ✓ {pdf} ({len(m.album)} sheets)")
+    say(f"  ({time.time() - t0:.0f}s)")
     return 1 if failed else 0
 
 
@@ -71,6 +86,7 @@ def main(argv=None):
     ap.add_argument("--design", help="design file (default design.json)")
     ap.add_argument("--no-render", "--norender", dest="no_render", action="store_true")
     ap.add_argument("--dpi", type=int, default=200)
+    ap.add_argument("-v", "--verbose", action="store_true", help="every step and page")
     a = ap.parse_args(argv)
     roots = [a.path] if (a.path / "survey.json").exists() else sorted(p.parent for p in a.path.glob("*/survey.json"))
     if not roots:
