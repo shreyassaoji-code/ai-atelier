@@ -10,7 +10,7 @@ Python 3.13.18, the system interpreter. It is also on PATH as `python3` and `pyt
 
 ## Packages
 
-Installed with `pip install --break-system-packages shapely matplotlib pypdf pillow numpy bpy`:
+Installed with `pip install --break-system-packages -r requirements.txt` (pinned):
 
 | Package | Version |
 |---|---|
@@ -19,14 +19,12 @@ Installed with `pip install --break-system-packages shapely matplotlib pypdf pil
 | pypdf | 6.17.0 |
 | pillow | 12.3.0 |
 | numpy | 2.5.3 |
-| bpy | 5.3.0 |
+| bpy | 5.2.3 LTS |
 
 Check:
 
 ```bash
 python -c "import shapely, matplotlib, pypdf, PIL, numpy, bpy"
 ```
-
-Note: the unpinned install gives bpy 5.3.0, not 5.2.3. To pin it, use `pip install --break-system-packages bpy==5.2.3`.
 
 Recorded 2026-11-25. See `setup.sh` for the environment setup script.

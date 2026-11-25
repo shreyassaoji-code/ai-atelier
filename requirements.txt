@@ -1,6 +1,6 @@
-shapely
-matplotlib
-pypdf
-pillow
-numpy
-bpy
+shapely==2.2.0
+matplotlib==3.11.2
+pypdf==6.17.0
+pillow==12.3.0
+numpy==2.5.3
+bpy==5.2.3 # Blender as a Python module; needs Python 3.13
