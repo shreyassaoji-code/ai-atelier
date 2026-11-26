@@ -19,7 +19,7 @@ Frames: `out/renders/fw_<feature>.png` (feature-wall views, framed like the clie
 
 | | |
 |---|---|
-| Frame names | feature walls `fw_<FW-id>.png`; a camera named in the design's `cameras[]` `fw_<id>.png`; corner views, three per board room, `cam_<room>-<n>.png` (e.g. `cam_MBR-2.png`) |
+| Frame names | feature walls `fw_<FW-id>.png`; a camera named in the design's `cameras[]` `fw_<id>.png`; corner views, three per board room, `cam_<room>-<n>.png` (e.g. `cam_MBR-2.png`); white-model axonometrics `ax_<room>.png` (kind `axo` – not for photoreal work). Frames come from `atelier/render3d.py` as a white model: the materials to ask for are in each frame's `materials`, not in its colours |
 | `cameras.json` | `{"frames": [{id, file, kind (feature/room), room, room_name, feature, rendered, ratio, size, reference, style, style_flag, materials[], caption, prompt}]}`. `prompt` is step 2 already filled from design.json; `style_flag: true` means the design gives no style and the default "contemporary luxury" was used. Only frames with `rendered: true` are current – never visualise a stale frame |
 | `<id>` in `viz_<id>_<n>.png` | the camera id (`V-MBR-2`), the frame name (`cam_MBR-2`, `fw_FW2`) or the feature id (`FW2`) |
 | `viz.json` | a list of `{"file", "caption", "room_name"}`; append, never rewrite others' entries |

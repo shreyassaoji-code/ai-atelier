@@ -797,8 +797,14 @@ def board(m, no, total, rid):
         fr.y += 3.3
     fr.y += 1.2
     fr.rule()
-    note = ("Vignettes A–C: rendered from this data (Blender Cycles); camera marks on the plan. Indicative only."
-            if all(produced) else "Vignettes marked 'render not produced' have no render yet.")
+    from atelier.render import manifest
+    man = manifest(root)
+    names = {"white": "white model, Blender {}", None: "Blender {}"}
+    engines = sorted({names.get(man.get(c["id"], {}).get("style"), "Blender {}").format(
+        {"workbench": "Workbench", "eevee": "EEVEE"}.get(man.get(c["id"], {}).get("engine"), "Cycles"))
+        for c in cams if man.get(c["id"])})
+    note = (f"Vignettes A–C: rendered from this data ({', '.join(engines)}); camera marks on the plan. "
+            "Indicative only." if all(produced) else "Vignettes marked 'render not produced' have no render yet.")
     fr.lines([("", note, None), ("*", "verify on site (see measured plan).", T.FLAG)], color=T.GREY,
              limit_y=T.DRAW[3] - 27)
     return sh

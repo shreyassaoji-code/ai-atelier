@@ -968,6 +968,9 @@ def is_current(root: Path, m, cam):
     man = manifest(root)
     e = man.get(cam["id"])
     from atelier.frames import frame_path
+    if e and e.get("style") == "white":                  # a white-model frame from atelier.render3d
+        from atelier.render3d import key
+        return frame_path(root, cam).exists() and e.get("key") == key(root, cam, e.get("engine"))
     return bool(e) and frame_path(root, cam).exists() and e.get("key") == _key(root, cam)
 
 

@@ -8,7 +8,7 @@
 Steps, in order; a step that fails stops that project:
   1 validate   atelier.validate: any error stops the build
   2 services   atelier.services: services.json from the STANDARDS §6 rules + services_overrides.json
-  3 3D         atelier.render: vignettes for the room boards (cached by data + camera)
+  3 3D         atelier.render3d: white-model axonometrics, corner and feature views (cached by data + camera)
   4 album      atelier.album: pages in STANDARDS §2 order -> out/pages/NN.png + out/album.pdf
 
 album.pdf is only ever replaced by a complete, checked build, or spliced page by page by a
@@ -52,13 +52,20 @@ def build_project(root: Path, a) -> int:
         say("3D skipped (--no-render)")
     else:
         import subprocess
-        r = subprocess.run([sys.executable, "-m", "atelier.render", str(root)],
-                           capture_output=not a.verbose, text=True)   # Blender prints from C: keep it out of the log
-        if r.returncode == 0:
+        ok = True                                                      # white model: rooms, then features
+        for extra in ([], ["--features"]):
+            r = subprocess.run([sys.executable, "-m", "atelier.render3d", str(root)] + extra,
+                               capture_output=not a.verbose, text=True)   # Blender prints from C: keep it out
+            if r.returncode != 0:
+                ok = False
+                tail = (r.stderr or r.stdout or "").strip().splitlines()[-1:] if not a.verbose else []
+                print(f"3D ✗ {tail[0] if tail else 'render failed'}: missing frames show RENDER NOT PRODUCED")
+            elif not a.verbose:
+                for line in (r.stdout or "").splitlines():
+                    if line.startswith("camera"):
+                        say(line)
+        if ok:
             print("3D ✓")
-        else:
-            tail = (r.stderr or r.stdout or "").strip().splitlines()[-1:] if not a.verbose else []
-            print(f"3D ✗ {tail[0] if tail else 'render failed'}: room boards will show RENDER NOT PRODUCED")
     try:                                                               # 4 album
         made, failed, verdict = album.build(m, root, a.sheet, a.dpi, log=say if not a.verbose else print)
     except ValueError as e:

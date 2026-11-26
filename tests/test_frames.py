@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from atelier import frames as FR  # noqa: E402
+from atelier import render3d as R3  # noqa: E402
 from atelier.model import load  # noqa: E402
 from atelier.render import all_cameras  # noqa: E402
 
@@ -32,7 +33,9 @@ FR.write_cameras(m)
 cj = json.loads((REN / "cameras.json").read_text())["frames"]
 e = next(x for x in cj if x["id"] == "V-FW2")
 checks += [
-    ("cameras.json lists every camera", len(cj) == len(cams)),
+    ("cameras.json lists every camera, axonometrics included",
+     {x["id"] for x in cj} == {c["id"] for c in R3.cameras(m) + R3.cameras(m, True)}),
+    ("axonometric frames listed as ax_<room>.png", any(x["file"] == "ax_MBR.png" and x["kind"] == "axo" for x in cj)),
     ("prompt filled: room, materials, no placeholders",
      "Master bedroom" in e["prompt"] or e["room_name"] in e["prompt"]) ,
     ("prompt has the feature's finishes", "WF7" in e["prompt"] and "<" not in e["prompt"]),

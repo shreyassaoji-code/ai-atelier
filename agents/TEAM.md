@@ -43,7 +43,7 @@ Project folder `projects/<name>/`: `plan.png`, `brief.md`, `refs/*` (client refe
      │
      ▼
  ┌──────────┐
- │7 3D      │ atelier.render ──► out/renders/cam_*.png fw_*.png cameras.json         GATE 7
+ │7 3D      │ atelier.render3d ──► out/renders/ax_*.png cam_*.png fw_*.png cameras.json   GATE 7
  └──────────┘
      │
      ├──────────────────────────────┐
@@ -76,7 +76,7 @@ Do not start a step until the previous GATE passes. A failed GATE goes back to t
 | 4 | Merge | you | `design.json` = copy of `design_W.json` | `python -m atelier.validate projects/<name>` → 0 errors. Keep the losing designs; do not edit them. |
 | 5 | Reference | 1 reference interpreter (`reference.md`), only if `refs/` has images | `reference.json`: `{"wall_features": [...], "feature_materials": [...]}` | You merge both lists into `design.json` (replace entries with the same id, add new ones). Then validate → 0 errors and no `W-FEATURE-HIDDEN` / `E-FEATURE-OPENING`; every image in `refs/` is the `ref` of one feature wall. (This overrides "write to design.json" in `reference.md`: agents edit only their own file.) |
 | 6 | Services | engine + 1 services engineer (`services.md`) | engine: `services.json`; agent: `services_overrides.json` | `python -m atelier.services projects/<name>`; agent reviews `out/` previews and writes overrides; `python -m atelier.services projects/<name> --check` → **0 findings**. Flagged defaults stay flagged. |
-| 7 | 3D | engine | `out/renders/cam_<room>-<n>.png`, `fw_<feature>.png`, `cameras.json` | `python -m atelier.render projects/<name>` (≈1.5 min a frame; run in the background and wait); `cameras.json` → every frame `rendered: true`. Open the frames: no glare blobs, no view filled by a blank wall. |
+| 7 | 3D | engine | `out/renders/ax_<room>.png`, `cam_<room>-<n>.png`, `fw_<feature>.png`, `cameras.json` | `python -m atelier.render3d projects/<name>` then `… --features` (white model, Workbench: ≈15 s a frame; the build runs both); every camera move it prints is read; `cameras.json` → every frame `rendered: true`. Open every frame: no glare blobs, no view filled by a near surface, axonometrics show the dark cut tops. |
 | 8 | Album | engine | `out/album.pdf`, `out/pages/NN.png`, `out/album.json` | `python -m atelier.build projects/<name>` prints `album ✓ … (N sheets)` with N = every sheet; open the key pages (cover, presentation, each room board, each feature wall, ceiling, power) and look. |
 | 8b | Visualise | 1 visualiser (`visualiser.md`), optional | `out/renders/viz_<id>_<n>.png`, `viz.json` | Run only if `ak-data.magnific.com` is reachable. Rebuild (step 8). Pre-check §9 shows no FAIL. If blocked: say so in the report; the Blender views stay. |
 | 9 | Check | 1 **fresh** checker (`checker.md`) | `out/check.json` | `python -m atelier.check projects/<name>` writes the draft; the checker completes it; `python -m atelier.check projects/<name> --validate` → 0 errors. Verdict `ready` → deliver. `ready after fixes` / `not ready` → each `must_fix` goes to the owner of its file (table below), redo from that step, then a **new** fresh checker. Stop after 3 rounds and report what is left. |

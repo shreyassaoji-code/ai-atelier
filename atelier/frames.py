@@ -25,6 +25,8 @@ DEFAULT_STYLE = "contemporary luxury"
 
 def frame_file(cam: dict) -> str:
     """File name of a camera's Blender frame."""
+    if cam.get("kind") == "axo":
+        return f"ax_{cam['room']}.png"
     if cam.get("feature"):
         return f"fw_{cam['feature']}.png"
     if not cam.get("auto", True):                     # a camera the design names: fw_<V>
@@ -67,22 +69,28 @@ def materials(m, cam) -> list[str]:
 
 def entries(m, root=None) -> list[dict]:
     from atelier.feature_sheet import ref_path
-    from atelier.render import R, all_cameras, is_current
+    from atelier.render import R, is_current
+    from atelier.render3d import cameras as cams3d
     root = Path(root or m.root)
     style = (getattr(m, "extras", {}) or {}).get("style")
     out = []
-    for c in all_cameras(m):
+    seen = set()
+    for c in cams3d(m) + cams3d(m, features=True):
+        if c["id"] in seen:
+            continue
+        seen.add(c["id"])
         room = m.room(c["room"])
         g = next((x for x in m.feature_walls if x["id"] == c.get("feature")), None)
         ref = ref_path(m, g) if g else None
         mats = materials(m, c)
         rn = room.get("name", room["id"])
-        what = f"{g['id']} feature wall" if g else f"from the {c.get('corner')} corner" if c.get("corner") else c["id"]
+        what = f"{g['id']} feature wall" if g else "axonometric" if c.get("kind") == "axo" else \
+            f"from the {c.get('corner')} corner" if c.get("corner") else c["id"]
         out.append({
-            "id": c["id"], "file": frame_file(c), "kind": "feature" if g else "room", "room": c["room"],
+            "id": c["id"], "file": frame_file(c), "kind": "feature" if g else c.get("kind", "room"), "room": c["room"],
             "room_name": rn, "feature": c.get("feature"),
             "rendered": bool(frame_path(root, c).exists() and is_current(root, m, c)),
-            "ratio": "1:1", "size": [R["size"], R["size"]],
+            "ratio": _ratio(root, c), "size": _size(root, c, R["size"]),
             "reference": str(ref.relative_to(root)) if ref and ref.is_relative_to(root) else (str(ref) if ref else None),
             "style": style or DEFAULT_STYLE, "style_flag": not style,
             "materials": mats,
@@ -90,6 +98,24 @@ def entries(m, root=None) -> list[dict]:
             "prompt": PROMPT.format(room=rn, style=style or DEFAULT_STYLE, materials="; ".join(mats) or "as drawn"),
         })
     return out
+
+
+def _done(root, cam):
+    from atelier.render import manifest
+    return manifest(root).get(cam["id"], {})
+
+
+def _size(root, cam, default):
+    e = _done(root, cam)
+    r = e.get("res") or ([e["size"]] * 2 if e.get("size") else [default, default])
+    return list(r)
+
+
+def _ratio(root, cam):
+    w, h = _size(root, cam, 1)
+    from math import gcd
+    g = gcd(int(w), int(h)) or 1
+    return f"{int(w) // g}:{int(h) // g}"
 
 
 def write_cameras(m, root=None) -> Path:

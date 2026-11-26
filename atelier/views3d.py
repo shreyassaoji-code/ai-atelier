@@ -192,6 +192,16 @@ def _eye_options(v, bx, by, d0, inner, blk):
     return out or [(v[0] + bx * d0, v[1] + by * d0)]
 
 
+def checked(m, cam):
+    """The camera as rendered: atelier.render3d.check_camera's fix applied (moved / blocked recorded),
+    so plans, boards, the check and the renderer all use one position."""
+    from atelier.render3d import check_camera
+    c2, mv, why = check_camera(m, cam)
+    if mv is None:
+        return dict(cam, blocked=why)
+    return dict(c2, moved=list(mv), moved_why=why) if mv else c2
+
+
 def room_cameras(m, room, n=3):
     """n eye-level cameras: data cameras first, then the best corners (level view, so verticals stay straight)."""
     out = [dict(c, auto=False) for c in m.cameras if c.get("room") == room["id"]][:n]
@@ -253,7 +263,7 @@ def room_cameras(m, room, n=3):
                     "target": [round(tx), round(ty), CAM["eye_z"]], "lens": CAM["lens"], "auto": True,
                     "corner": octant((v[0] - (bb[0] + bb[2]) / 2) / (bb[2] - bb[0]), (v[1] - (bb[1] + bb[3]) / 2) / (bb[3] - bb[1])),
                     "looking": octant(math.cos(yaw), math.sin(yaw))})
-    return out
+    return [checked(m, c) for c in out]
 
 
 def feature_camera(m, g):
@@ -271,6 +281,6 @@ def feature_camera(m, g):
     d = max(1200, min(depth - 350, 4200))
     lens = 20 if (u1 - u0) > 1.35 * d else 24
     eye = (mid[0] + nx * d, mid[1] + ny * d)
-    return {"id": f"V-{g['id']}", "room": g["room"], "eye": [round(eye[0]), round(eye[1]), CAM["eye_z"]],
+    return checked(m, {"id": f"V-{g['id']}", "room": g["room"], "eye": [round(eye[0]), round(eye[1]), CAM["eye_z"]],
             "target": [round(mid[0]), round(mid[1]), CAM["eye_z"]], "lens": lens, "auto": True,
-            "feature": g["id"], "looking": octant(-nx, -ny)}
+            "feature": g["id"], "looking": octant(-nx, -ny)})
