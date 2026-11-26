@@ -1,8 +1,9 @@
 """A designer's quick look at one design file, without touching the album.
 
     python -m atelier.preview projects/<name> design_<X>.json
-        -> projects/<name>/out/preview/design_<X>-layout.png    (furniture + joinery plan)
-           projects/<name>/out/preview/design_<X>-ceiling.png   (ceiling plan)
+        -> projects/<name>/out/preview_<X>.png           (layout: furniture + joinery plan)
+           projects/<name>/out/preview_<X>_ceiling.png   (ceiling plan)
+    python -m atelier.preview projects/<name>         every design_*.json in the project (for the judges)
 
 The services (downlights, fans, coves) are worked out in memory for this design by the
 STANDARDS §6 rules; services_overrides.json is not applied (it belongs to design.json).
@@ -31,12 +32,13 @@ def preview(root: Path, design: str, dpi: int = 150):
         print(f"  {c:18} {msg}")
     print(f"validate {'✓' if not rep.errors else '✗'} {len(rep.errors)} errors, {len(rep.warnings)} warnings")
     m.services_items = Builder(m).run()
-    out = root / "out" / "preview"
+    out = root / "out"
     out.mkdir(parents=True, exist_ok=True)
     stem = Path(design).stem
+    tag = stem.split("design_", 1)[1] if stem.startswith("design_") else stem
     made = []
-    for name, fn in (("layout", furniture_plan), ("ceiling", ceiling_plan)):
-        png = out / f"{stem}-{name}.png"
+    for name, fn in (("", furniture_plan), ("_ceiling", ceiling_plan)):
+        png = out / f"preview_{tag}{name}.png"
         fn(m, 1, 1).save(None, png, dpi)
         made.append(png)
     for p in made:
@@ -47,10 +49,14 @@ def preview(root: Path, design: str, dpi: int = 150):
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="python -m atelier.preview")
     ap.add_argument("project", type=Path)
-    ap.add_argument("design", help="design file in the project, e.g. design_A.json")
+    ap.add_argument("design", nargs="?", help="design file in the project, e.g. design_A.json (default: every design_*.json)")
     ap.add_argument("--dpi", type=int, default=150)
     a = ap.parse_args(argv)
-    return preview(a.project, a.design, a.dpi)
+    designs = [a.design] if a.design else sorted(p.name for p in a.project.glob("design_*.json"))
+    if not designs:
+        print(f"no design_*.json in {a.project}")
+        return 2
+    return max(preview(a.project, d, a.dpi) for d in designs)
 
 
 if __name__ == "__main__":

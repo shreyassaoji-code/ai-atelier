@@ -123,6 +123,10 @@ Designers may write a design in the brief's words; `atelier/vocab.py` turns it i
 
 `services_overrides.json`: `{"remove": [id, ...], "move": [{"id", "at", "z"}], "add": [item, ...]}`.
 
+## 3b. scores_<N>.json (written by each judge, agents/judge.md)
+
+`{"judge": "Architect", "scores": {"A": {"brief", "function", "storage", "light", "build", "total", "why"}, "B": {…}, "C": {…}}, "winner": "A", "must_fix": ["…"]}`: one entry per `design_<X>.json` in the project; each rubric score an integer **0–20**, `total` their sum, `why` text; `winner` one of the designs; `must_fix` at least one concrete fix for the winner. `python -m atelier.scores projects/<name>` checks every file and prints the panel (totals per judge, sum, leader).
+
 ## 4. Example: survey.json (one room, abridged)
 
 ```json
