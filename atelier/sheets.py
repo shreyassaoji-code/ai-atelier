@@ -578,8 +578,13 @@ def cover(m, no, total):
         sh.caps(x0, y, "Palette", T.GREY)
         y += 5
         for i, t in enumerate(ex["palette"][:6]):
-            name = t.get("name") if isinstance(t, dict) else t
-            tone = named_tone(name)
+            if isinstance(t, dict):
+                name, col = t.get("name"), t.get("colour") or t.get("color")
+            elif isinstance(t, (list, tuple)):                 # data contract: [name, "#RRGGBB"]
+                name, col = t[0], (t[1] if len(t) > 1 else None)
+            else:
+                name, col = t, None
+            tone = named_tone(col) if col is not None and named_tone(col) is not None else named_tone(name)
             cx_ = x0 + 6 + i * 17
             sh.circle(cx_, y + 4, 5, edge=T.INK, fill=TX.hexc(tone) if tone is not None else T.PAPER, lw=LW_THIN, z=5)
             for k_, ln in enumerate(_wrap_words(name, 12)[:2]):

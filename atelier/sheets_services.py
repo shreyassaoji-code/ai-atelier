@@ -36,8 +36,10 @@ NAMES = {
     "media": "Media / HDMI point", "fridge_socket": "Fridge socket", "oven_16a": "Oven 16A",
     "microwave_socket": "Microwave socket", "dw_socket": "Dishwasher 16A", "chimney_point": "Chimney point",
     "ro_point": "RO purifier point", "mirror_light": "Mirror light IP44",
+    "socket_16a": "Power socket 16A", "wall_light": "Wall light", "mixer": "Mixer", "shower_head": "Shower head",
 }
-CODE_SYMBOL = {"media": "M", "fridge_socket": "F", "oven_16a": "O", "microwave_socket": "MW", "dw_socket": "DW",
+CODE_SYMBOL = {"socket_16a": "16A", "wall_light": "WL", "mixer": "MX", "shower_head": "SH",
+               "media": "M", "fridge_socket": "F", "oven_16a": "O", "microwave_socket": "MW", "dw_socket": "DW",
                "chimney_point": "CH", "ro_point": "RO"}
 
 

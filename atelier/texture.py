@@ -80,7 +80,13 @@ TONE_MOD = [(("light", "pale", "soft"), T.PAPER, 0.40), (("dark", "deep", "rich"
 
 def named_tone(name):
     """A colour name ("warm oak", "deep olive", "bone") as RGB mixed from theme tokens, or None."""
-    words = str(name or "").lower().replace("-", " ").split()
+    s = str(name or "").strip()
+    if len(s) == 7 and s[0] == "#":                        # a colour given in the data as #RRGGBB
+        try:
+            return np.array([int(s[i:i + 2], 16) / 255 for i in (1, 3, 5)])
+        except ValueError:
+            return None
+    words = s.lower().replace("-", " ").split()
     text = " ".join(words)
     base = next((fn() for keys, fn in TONE_BASE if any(k in words or (" " in k and k in text) for k in keys)), None)
     if base is None:

@@ -1,11 +1,114 @@
-# AI Atelier — data schema
+# Data contract (all agents read this)
 
-Agents write these files; `atelier/` reads them. Nothing else is input to the engine.
+Units: **millimetres**. Origin bottom-left of the apartment, **x → east, y → north**. All coordinates are integers. Each project lives in `projects/<name>/` and holds four JSON files. Drawings, 3D and renders are generated from them – agents never draw.
 
+## survey.json — Surveyor
+
+```json
+{
+ "project": {"name","code","address","client","designer","date","source"},
+ "levels": {"ceiling_height": 2750, "ceiling_height_flag": true},
+ "calibration": {"image": "plan.png", "px_per_mm": 0.08, "origin_px": [112, 940]},
+ "walls": [{"id":"E1","a":[0,0],"b":[11400,0],"t":230,"type":"external|partition|load|parapet","h":null,"flag":false}],
+ "openings": [{"id":"D1","wall":"E1","offset":7000,"width":2400,
+               "kind":"door|entrance|window|ventilator|balcony_door|sliding_door|opening",
+               "h":2100,"sill":0,"side":1,"hinge":"start|end","flag":true}],
+ "rooms": [{"id":"R1","name":"Master bedroom","poly":[[115,4258],[3743,4258],...],"kind":"dry|wet|kitchen|circulation|balcony"}],
+ "flags": [{"text":"Ceiling height assumed – verify","ref":"levels"}]
+}
 ```
-projects/<name>/survey.json    existing condition, read from the plan image (surveyor)
-projects/<name>/design.json    proposed interior (designer, services, …)
+
+* Walls are **centre-lines** `a→b` with thickness `t`. Split a wall wherever another wall meets it (T-junctions) or wherever demolition may later apply.
+* `offset` = distance from `wall.a` along the wall to the first jamb of the opening.
+* The wall's **left normal** (rotate a→b by +90°) is side `+1`. `side` = which side a door leaf swings into. `hinge:"start"` = hinge at the jamb nearer `wall.a`.
+* Rooms are **clear internal polygons** (wall faces = centre-line ± t/2), counter-clockwise preferred.
+* `flag:true` on anything not legible on the source plan (dimension guessed, typical value used). These print in red with `*`.
+* `calibration` maps mm → image pixels: `px = origin_px.x + x*px_per_mm`, `py = origin_px.y - y*px_per_mm`. Used by `python -m atelier.overlay` to check walls against the source image.
+
+## design.json — Designers (one per concept), then the winner is copied to `design.json`
+
+```json
+{
+ "concept":"A", "style":"Warm minimalism", "summary":"one paragraph", "brief":["Q1 → answer", "Q2 → answer"],
+ "palette":[["Warm white","#EDE6DB"], ...],
+ "demolish":["I7"], "demolish_openings":[],
+ "new_walls":[{"id":"N1","a":[..],"b":[..],"t":100,"type":"partition","h":2600,"material":"..."}],
+ "new_openings":[{"id":"D8","wall":"N1", ...same as openings}],
+ "opening_overrides":[{"id":"D3","hinge":"end"}],
+ "rooms":[ ...full room list after the redesign (same format as survey)... ],
+ "switch_spots":{"R3":[5300,4343]},
+ "furniture":[{"id":"F1","type":"bed","label":"Queen bed 1800×2000","room":"R1","x":115,"y":5370,"w":2100,"d":1800,"facing":"E",
+               "headboard":"curved", "finish":"marble|velvet", "lamp":true}],
+ "joinery":[{"id":"J1","name":"Wardrobe – master","room":"R1","x":600,"y":4258,"w":2400,"d":600,"facing":"N",
+             "materials":{"fronts":"MB-1","carcass":"MB-5","handles":"MB-7"},
+             "worktop":{"z":850,"t":30,"from":0},
+             "rows":[{"z":0,"h":2700,"depth":600,"start":0,"modules":[
+                {"w":800,"parts":[{"h":2100,"type":"door","label":"Long hanging"},{"h":600,"type":"door","label":"Loft"}]},
+                {"w":800,"type":"drawers","n":3}]}],
+             "notes":["..."]}],
+ "materials":{"MB-1":"Oak veneer ...","HW":"hardware note"},
+ "floor_materials":{"FL-1":{"name":"...","pattern":"tile|planks|herringbone","color":"#D9BE95","module":[600,120]}},
+ "floors":{"R1":"FL-1"},
+ "finish_materials":{"WF-1":{"name":"...","color":"#EDE6DB"}},
+ "wall_finishes":{"R1":[{"code":"WF-1","edges":"all"},{"code":"WF-5","edges":[3]}]},
+ "ceilings":[{"room":"R3","type":"flat|tray|exposed","h":2600,
+              "steps":[{"band":600,"h":2550},{"band":500,"h":2650}],"core_h":2720,"tracks":[[x1,y1,x2,y2]],"material":"",
+              "area":[x0,y0,x1,y1], "features":[{"x":..,"y":..,"r":750,"h":2900}]}],
+ "views":[{"id":"V5","room":"R5","edge":1,"name":"Kitchen – sink wall"}],
+ "cameras":[{"room":"R3","pos":[x,y,1450],"target":[x,y,1050],"lens":18}],
+ "wall_features":[{"id":"FW1","room":"R1","edge":3,"name":"Master bedroom – headboard wall","ref":"ref_master.jpg","z1":2600,
+   "items":[{"from":0,"to":900,"type":"mural|upholstered|fluted|slats|mirror|lineart|arch|niche|plain","code":"FW1","color":"#EFE2CC",
+             "depth":60,"z0":0,"z1":2600,"panels":4,"pitch":45,"shelves":5,"backlit":true,"round":false,"concealed":false,
+             "tv":{"w":1450,"h":820,"z":1250}}],
+   "led":[900], "pendants":[{"u":3080,"z":1350,"d":90,"h":320}], "note":"..."}],
+ "feature_materials":{"FW-1":"Back-lit printed fabric panel ..."},
+ "notes":["general notes printed on sheet 2"]
+}
 ```
+
+* **Furniture & joinery footprints are axis-aligned boxes**: `x,y` lower-left, `w` along x, `d` along y. `facing` = N/S/E/W, the direction the *front* looks (foot of the bed, seat of the sofa, cabinet doors). The *back* sits on the opposite side – put it on the wall face.
+* Furniture `type` values the engine draws: bed, nightstand, sofa, armchair, coffee_table, side_table, dining_table, chair, desk, rug, plant, wc, basin, shower, fridge, washing_machine, bench, tv_unit, island. Unknown types draw as a labelled box.
+* Joinery: modules in a row are listed along the back line in increasing x (for N/S facing) or increasing y (for E/W facing). Module widths of a row must sum to the run length (`w` for N/S facing, `d` for E/W). Part / module types: door, drawers (n), open, shelf, sink, hob (use label "Hob"), hood, oven, appliance, fridge, dishwasher, panel, mirror, none (gap, e.g. over a window).
+* Ceilings: `area` limits the tray to part of the room (the rest stays at the first step level); `features` adds a circular dome / cove (radius r, level h) with its own cove LED ring – the services engine keeps downlights out of it.
+* `views`: extra 3D feature-camera views for rooms without a wall feature (kitchen, study). They render to `out/renders/fw_<id>.png` and supply the circular vignettes of that room's presentation board.
+* Room edges are numbered from the polygon's first vertex in counter-clockwise order (rect starting lower-left: 0 = south, 1 = east, 2 = north, 3 = west).
+
+## services.json — generated by `python -m atelier.services`; edited only via services_overrides.json
+
+```json
+{"remove":["E12"], "move":[{"id":"E07","x":3743,"y":6900,"h":1100}],
+ "add":{"electrical":[{"id":"E90","type":"socket_double","room":"R3","x":...,"y":...,"h":300,"note":"Floor lamp"}],
+        "lighting":[], "switches":[], "plumbing":[], "hvac":[]}}
+```
+
+HVAC types: `ac_indoor` (split, wall unit) and `ac_ducted` (x1,y1,x2,y2 slot diffuser in the ceiling band) – the engine chooses ducted automatically for rooms with a feature wall + tray ceiling. Point types – electrical: socket, socket_double, socket_usb, power16, socket_ip, tv, data, vdp, db, exhaust, switch. Lighting: downlight, pendant, wall_light, strip (x,y,x2,y2, shape line|rect), fan. Plumbing: cold, hot, drain, drain_wc, mixer, shower_head, floor_trap.
+
+### How the engine reads the contract (`atelier/contract.py`, applied on load)
+
+| Contract | Resolved form (sections below) |
+|---|---|
+| wall `type` partition / external / load / parapet, `h` | `kind` internal / external / load / parapet, `height`; `align` centre |
+| opening `h` | the opening's own height: `head = sill + h` |
+| `side` +1 / −1 | `swing` left / right of the wall's a→b line; windows, openings, sliding doors: none |
+| `entrance`, `balcony_door` | `door` (the entrance keeps `entrance: true` for the DB / VDP rule R6.9) |
+| room `kind` | room `type` read from the **name** first (master bed → master_bedroom, living, kitchen, bath, toilet, balcony, dress, foyer, study, puja …), else from `kind` (wet → bath, kitchen, circulation → passage, balcony, dry → bedroom) – the latter is reported as **W-CONTRACT** |
+| `levels.ceiling_height` (+ flag) | `levels.soffit` and `levels.ceiling` (+ flags) |
+| furniture box `x, y, w, d, facing` | `at` (centre), `size` [across the front, along facing, height]; heights by type unless `h` is given; wc / basin / shower / bathtub / washing_machine → `sanitary[]` |
+| joinery box + `rows` | one item on the wall whose face lies behind the box (`wall`, `offset` from wall.a, `width`, `depth`, `z`, `height`); rows that touch in z with the same `start`, run and `depth` merge into one item whose `parts` become horizontal bands; a row at its own height or depth (wall units) becomes its own item `J1-2`; `kind` from `name`; no wall behind it → a labelled box + W-CONTRACT |
+| part types | door → shutter (label "Loft" → loft), drawers → drawer, open / shelf → open, hood / oven / fridge / dishwasher → appliance with that label, mirror → panel, none → filler |
+| `materials` / `floor_materials` / `finish_materials` / `feature_materials` dicts | finishes; `#RRGGBB` colours are used as given |
+| `floors {room: code}`, `wall_finishes {room: [{code, edges}]}` | floors[]; `edges: "all"` → the room's wall finish, an edge list → a full-height finish on that wall |
+| ceiling `tracks [x1,y1,x2,y2]`, `area [x0,y0,x1,y1]`, `features {x,y,r,h}`, `exposed` | track paths, a partial-tray outline, domes; `exposed` → no false ceiling |
+| `views {id, room, edge}` | a design camera square-on to that edge, frame `fw_<id>.png`, first vignette of the room board |
+| `cameras {room, pos, target, lens}` | a design camera; a tilted target is levelled (verticals stay vertical, RB2a.6) and reported |
+| wall feature item `plain`, `round`, `tv`, pendant `h` | `paint`, `rounded`, a TV panel centred on the item, pendant `length` |
+| overrides `move {x, y, h}`, `add {system: [...]}` | `at`, `z`; systems → power / lighting / switching / plumbing / ac; power16 → socket_16a, socket_ip → ip44_socket, tv → tv_power, data → lan, switch → switchboard, drain → waste, drain_wc → soil, ac_indoor → split, ac_ducted → supply_grille |
+
+Integers: a centre-line wall of odd thickness (115) has faces at ±57.5; room polygons may overlap it by up to 1 mm on average (not an E-ROOM-WALL). `python -m atelier.contract export projects/<name> OUT/` writes any project in contract form.
+
+---
+
+# Engine reference — the resolved form
 
 ## 0. Conventions (apply to every file)
 

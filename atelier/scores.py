@@ -85,9 +85,14 @@ def panel(root: Path, out=print):
         tot = [d["scores"][x]["total"] for d in data]
         sums[x] = sum(tot)
         out(f"{x:6}  " + "  ".join(f"{t:>10}" for t in tot) + f"  {sums[x]:>8}")
-    lead = max(letters, key=lambda x: (sums[x], sum(d["winner"] == x for d in data)))
+    # TEAM.md: winner = highest mean total; a tie goes to the best function score (summed over judges)
+    func = {x: sum(d["scores"][x]["function"] for d in data) for x in letters}
+    lead = max(letters, key=lambda x: (sums[x], func[x]))
+    tie = [x for x in letters if sums[x] == sums[lead] and x != lead]
     votes = sum(d["winner"] == lead for d in data)
-    out(f"scores ✓ leader {lead} ({sums[lead]} of {100 * len(data)}; picked by {votes} of {len(data)} judges)")
+    out(f"scores ✓ leader {lead} (mean {sums[lead] / len(data):.1f} of 100; picked by {votes} of {len(data)} judges)"
+        + (f"; tie with {', '.join(tie)} broken on function {func[lead]} vs {', '.join(str(func[x]) for x in tie)}"
+           if tie else ""))
     return 0, lead
 
 

@@ -38,6 +38,7 @@ PREFIX = {
     "split": "AC", "ducted": "AD", "odu": "OU", "supply_grille": "SG", "return_grille": "RG", "refrigerant": "RF",
     "media": "MD", "fridge_socket": "FR", "oven_16a": "OV", "microwave_socket": "MW", "dw_socket": "DW",
     "chimney_point": "CY", "ro_point": "RO", "mirror_light": "ML",
+    "socket_16a": "PS", "wall_light": "WL", "mixer": "MX", "shower_head": "SH",   # data contract point types
 }
 KITCHEN_APPLIANCES = [          # (kind, words in a module label, height; STANDARDS R6.7a)
     ("fridge_socket", ("fridge", "refrigerator"), 300),
@@ -306,6 +307,12 @@ class Builder:
                     if f is not None:
                         self._appliance(rid, kind, f, t, z, "R6.7a")
                     continue
+                fr = next((x for x in self.m.furniture if x["room"] == rid and x.get("kind") == "fridge"), None)
+                if kind == "fridge_socket" and fr:              # a fridge placed as furniture: socket behind it
+                    f, t = self.nearest_face(rid, fr["at"])
+                    if f is not None:
+                        self._appliance(rid, kind, f, t, z, "R6.7a", note=f"behind fridge {fr['id']}")
+                        continue
                 self._appliance_default(rid, kind, z, mods)
 
         return
@@ -655,6 +662,10 @@ class Builder:
                 self.wall_device("plumbing", "cold", s["room"], f, t - 100, 1000, "R6.14", note="mixer; head h2100")
                 self.wall_device("plumbing", "hot", s["room"], f, t + 100, 1000, "R6.14", note="mixer")
                 self.add("plumbing", "floor_trap", s["room"], s["at"], 0, "R6.14")
+            elif s["kind"] == "basin":                           # free-standing basin: as a vanity sink (R6.14)
+                self.wall_device("plumbing", "cold", s["room"], f, t - 100, 550, "R6.14")
+                self.wall_device("plumbing", "hot", s["room"], f, t + 100, 550, "R6.14")
+                self.wall_device("plumbing", "waste", s["room"], f, t, 450, "R6.14")
             elif s["kind"] == "washing_machine":
                 self.wall_device("plumbing", "cold", s["room"], f, t - 150, 1050, "R6.14", note="WM inlet")
                 self.wall_device("plumbing", "waste", s["room"], f, t + 50, 600, "R6.14")
@@ -752,7 +763,8 @@ def build(root: Path) -> tuple[dict, list, list]:
     rep, errs = [], []
     ovp = root / "services_overrides.json"
     if ovp.exists():
-        ov = json.loads(ovp.read_text())
+        from atelier.contract import overrides as _contract_ov
+        ov = _contract_ov(json.loads(ovp.read_text()))
         items, rep, errs = apply_overrides(items, ov)
         b = Builder(m)
         moved = {mv.get("id") for mv in ov.get("move", [])}

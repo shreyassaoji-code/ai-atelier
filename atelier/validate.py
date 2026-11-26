@@ -39,8 +39,8 @@ ENUMS = {
                         "bath", "toilet", "utility", "balcony", "foyer", "passage", "study", "puja",
                         "store", "dress", "shaft"},
     ("furniture", "kind"): {"sofa", "armchair", "coffee_table", "side_table", "dining_table", "chair",
-                            "bed", "bedside", "bench", "desk", "rug", "console", "tv", "plant", "other"},
-    ("sanitary", "kind"): {"wc", "shower", "bathtub", "washing_machine"},
+                            "bed", "bedside", "bench", "desk", "rug", "console", "tv", "plant", "fridge", "other"},
+    ("sanitary", "kind"): {"wc", "shower", "bathtub", "washing_machine", "basin"},
     ("joinery", "kind"): {"wardrobe", "tv_unit", "kitchen_base", "kitchen_wall", "tall_unit", "vanity",
                           "shoe_rack", "crockery", "study_unit", "bookshelf", "puja_unit", "other"},
 }
@@ -112,6 +112,8 @@ def check(m: Model) -> Report:
     for d in m.demolished:
         if d["kind"] == "wall" and kinds.get(d["id"]) in ("external", "load"):
             R.E("E-DEMOLISH-STRUCT", f"wall {d['id']} is {kinds[d['id']]}: it may not be demolished")
+    for n in getattr(m, "contract_notes", []):            # guesses made translating the data contract
+        R.W("W-CONTRACT", n)
     for e in m.override_errors:
         R.E("E-REF", e)
     # ---- feature walls (agents/reference.md, STANDARDS §4) ------------------------
@@ -190,8 +192,10 @@ def check(m: Model) -> Report:
     # ---- rooms vs walls and each other -------------------------------------------
     walls_all = unary_union(list(wpoly.values()))
     for r in m.rooms:
+        # integer centre-lines and polygons (SCHEMA §0) leave up to 0.5 mm along each face of an odd-thickness
+        # wall: an overlap no thicker than 1 mm on average is rounding, not a clash
         a = rpoly[r["id"]].intersection(walls_all).area
-        if a > MIN_CLASH:
+        if a > max(MIN_CLASH, rpoly[r["id"]].length * 1.0):
             R.E("E-ROOM-WALL", f"room {r['id']} polygon runs into wall bodies ({a / 1e6:.3f} m²)")
     for r1, r2 in combinations(m.rooms, 2):
         a = rpoly[r1["id"]].intersection(rpoly[r2["id"]]).area

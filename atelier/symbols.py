@@ -151,6 +151,12 @@ def furniture_parts(f):
         P.append((_circ(0, 0, r * 0.2), "leaf"))
     elif k == "tv":
         P.append((_rr(-A, -B, A, B, 5), "ink"))
+    elif k == "fridge":                                     # appliance box with a door split line
+        P.append((_rr(-A, -B, A, B, 25), "linen"))
+        P.append((_rr(-A + 30, B - 60, A - 30, B - 30, 5), "inner"))
+    elif k == "other":                                      # unknown type: a plain box, labelled (draw_furniture)
+        P.append((_rr(-A, -B, A, B, 20), "linen"))
+        P.append((_rr(-A + 30, -B + 30, A - 30, B - 30, 15), "inner"))
     else:
         P.append((_rr(-A, -B, A, B, 30), "fabric"))
     fin = f.get("finish")                                   # look-defining options (agents/designer.md)
@@ -202,6 +208,12 @@ def draw_furniture(pv, f, mode="present"):
 
 
 # =================================================================== joinery (top-down)
+    if f.get("kind") == "other" and f.get("label"):         # unknown contract type: say what it is
+        from atelier.draw import sans
+        x, y = pv.P(*f["at"])
+        pv.sh.text(x, y, str(f["label"])[:22], sans("dim", 600), T.INK, ha="center", va="center", zorder=7)
+
+
 def joinery_modules(j, wall, room):
     """[(module, polygon_plan)] along the wall, on the room side."""
     side = _geom.room_side_of_wall(wall, room) or "left"
@@ -272,6 +284,11 @@ def sanitary_parts(s):
     elif k == "washing_machine":
         P.append((_rr(-A, -B, A, B, 30), "linen"))
         P.append((_circ(0, B * 0.05, min(A, B) * 0.62), "inner"))
+    elif k == "basin":                                      # counter or pedestal with an oval bowl
+        P.append((_rr(-A, -B, A, B, 30), "worktop"))
+        from shapely.affinity import scale as _sc
+        P.append((_sc(_Pt(0, B * 0.1).buffer(1, 32), A * 0.6, B * 0.55), "linen"))
+        P.append((_circ(0, B * 0.1, min(A, B) * 0.06), "metal"))
     return P
 
 

@@ -2158,7 +2158,17 @@
    "z": 1800,
    "rule": "R6.9",
    "wall": "X2",
-   "into": 270
+   "into": 270,
+   "protection": {
+    "rccb_ma": 30,
+    "wet_rooms": [
+     "KIT",
+     "MBT",
+     "CBT",
+     "BAL"
+    ],
+    "socket_circuits": true
+   }
   },
   {
    "id": "RT-LD-01",
@@ -2758,10 +2768,11 @@
     11170,
     1280
    ],
-   "z": 1000,
+   "z": 1050,
    "rule": "R6.14",
    "wall": "P2",
-   "into": 270
+   "into": 270,
+   "note": "WM inlet"
   },
   {
    "id": "WW-BAL-01",

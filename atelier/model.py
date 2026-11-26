@@ -41,6 +41,8 @@ class Model:
     extras: dict = field(default_factory=dict)           # palette, style, summary, switch_spots (brief)
     feature_walls: list = field(default_factory=list)    # interpreter's feature walls (atelier/features.py)
     override_errors: list = field(default_factory=list)
+    contract_notes: list = field(default_factory=list)   # guesses made translating the data contract
+    contract_extras: dict = field(default_factory=dict)  # contract items resolved after load (atelier/contract.py)
 
     # ---- lookups
     def wall(self, wid):
@@ -109,7 +111,9 @@ def calibration_pairs(cal: dict) -> dict:
 def load(root, design: str | None | bool = None) -> Model:
     """design=None: design.json if present; a file name/path: that design; False: survey only."""
     root = Path(root)
-    sv = _read(root / "survey.json")
+    from atelier import contract
+    sv = contract.survey(_read(root / "survey.json"))
+    sv_notes = sv.pop("_contract_notes", []) if isinstance(sv, dict) else []
     ff = sv.get("flag") is True
     m = Model(root=root, project=sv.get("project", {}), levels=dict(sv.get("levels", {})),
               calibration=sv.get("calibration", {}), walls=copy.deepcopy(sv.get("walls", [])),
@@ -131,6 +135,7 @@ def load(root, design: str | None | bool = None) -> Model:
     for q in m.flags:
         m.verify.append((q.get("ref") or q.get("id"), None, q.get("note", "")))
 
+    m.contract_notes = list(sv_notes)
     if design is False:
         return m
     dpath = root / (design or "design.json")
@@ -140,6 +145,11 @@ def load(root, design: str | None | bool = None) -> Model:
         return m
     from atelier import vocab
     brief = _read(dpath)
+    m.contract_notes = list(sv_notes)
+    if contract.is_contract_design(brief):
+        brief = contract.design(brief, sv)
+        m.contract_notes += brief.pop("_contract_notes", [])
+        m.contract_extras = brief.pop("_contract_extras", {})
     ds, m.extras = vocab.normalise(brief, {r["id"]: geom.room_polygon(r) for r in m.rooms if r.get("poly")})
     m.design_brief = brief
     m.design_raw = ds
@@ -202,6 +212,7 @@ def load(root, design: str | None | bool = None) -> Model:
     m.design = {k: copy.deepcopy(ds.get(k, [])) for k in DESIGN_LISTS}
     from atelier import features
     features.expand(m)                                      # interpreter's feature walls -> engine entries
+    contract.resolve(m)                                     # contract views / wall finishes by room edge
     for k in ("new_walls", "new_openings", "rooms", *DESIGN_LISTS):
         _collect_flags(k, m.design.get(k, []) if k in DESIGN_LISTS else ds.get(k, []), dff, m.verify)
     return m

@@ -129,7 +129,9 @@ def run(root: Path) -> Report:
         cams = all_cameras(m)
         stale = [c["id"] for c in cams if not is_current(root, m, c)]
         R.ok("2 Album", not stale, f"all {len(cams)} 3D views rendered from the current data",
-             f"3D views missing or out of date: {', '.join(stale)} (boards show RENDER NOT PRODUCED)")
+             f"3D views missing or out of date: {', '.join(stale)} (boards show RENDER NOT PRODUCED)",
+             fix=f"engine run, no data change: python -m atelier.render3d {root} and … --features "
+                 "(or python -m atelier.build without --no-render)")
     except Exception as e:  # noqa: BLE001
         R.add("2 Album", "LOOK", f"render state unknown ({e})")
 

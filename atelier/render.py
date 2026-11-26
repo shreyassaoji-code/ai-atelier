@@ -498,6 +498,12 @@ class Scene:
             self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 2 + dp)
         else:
             self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 4)
+        tv = wf.get("tv")
+        if tv:                                                  # a TV centred on its item (data contract)
+            tc = ta + tv.get("frac", 0.5) * (tb - ta)
+            tw, th, tz = tv.get("w", 1450), tv.get("h", 820), tv.get("z", 1200)
+            scr = self.mat("hob", color=TX.mix(T.INK, T.GREY, 0.1), rough=0.08)
+            self._strip(scr, f, cuts, u, tc - tw / 2, tc + tw / 2, tz, tz + th, 2 + dp, 2 + dp + 45)
         if wf.get("backlit") and k != "arch":                  # glow at the element's edges
             for a_, b_, za, zb in ((ta, tb, z0 + 5, z0 + 25), (ta, tb, z1 - 25, z1 - 5), (ta, ta + 20, z0, z1),
                                    (tb - 20, tb, z0, z1)):
@@ -669,6 +675,11 @@ class Scene:
                     B(wood, F, su, su + 40, sv, sv + 40, 0, 180)
             B(fab, F, -hw, hw, -hd, hd, 180, h - 60)
             B(cus, F, -hw + 10, hw - 10, -hd + 10, hd - 10, h - 60, h)
+        elif k == "fridge":                                     # appliance: white box, door split, handle
+            white = self.mat("ceramic", color=TX.mix(T.PAPER, T.LIGHT, 0.05), rough=0.15)
+            B(white, F, -hw, hw, -hd, hd, 0, h)
+            B(self.mat("shadow", color=TX.mix(T.GREY, T.INK, 0.6), rough=0.7), F, -hw + 5, hw - 5, hd, hd + 3,
+              h * 0.62, h * 0.62 + 8)
         elif k == "rug":
             rb = self.mat("rug_border", color=P["rug_border"], rough=1.0)
             rg = self.mat("rug", color=P["rug"], rough=1.0, sheen=True)

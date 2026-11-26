@@ -94,9 +94,14 @@ def expand(m):
                 ent = {"id": f"{fw['id']}.{i}", "room": room["id"], "wall": f.wall, "offset": round(min(t0, t1)),
                        "width": round(abs(t1 - t0)), "z0": it["z0"], "z1": it["z1"], "kind": it.get("type", "paint"),
                        "finish": it.get("code"), "parent": fw["id"], "u0": lo, "u1": hi}
-                for k in ("color", "depth", "backlit", "panels", "rounded", "concealed", "note", "flag"):
+                for k in ("color", "depth", "backlit", "panels", "rounded", "concealed", "note", "flag", "shelves",
+                          "pitch"):
                     if k in it:
                         ent["tone" if k == "color" else k] = it[k]
+                if it.get("tv"):                                 # a TV centred on its item (data contract)
+                    uc = (it["from"] + it["to"]) / 2
+                    if lo <= uc <= hi:
+                        ent["tv"] = dict(it["tv"], frac=(uc - lo) / (hi - lo))
                 out.append(ent)
             if it.get("concealed"):
                 for o in m.openings:
@@ -255,6 +260,12 @@ def draw(C, m, wf, xa, xb, z0, z1):
         C.sh.lines(pl, T.HAIR, LW_HAIR, z=3)
     if wf.get("backlit"):                                      # glow line round a back-lit element
         C.rect(xa + 25, xb - 25, z0 + 25, z1 - 25, edge=led, lw=LW_LINE, dash=DASH, z=4.6)
+    tv = wf.get("tv")
+    if tv:
+        xc = xa + tv.get("frac", 0.5) * (xb - xa)
+        tw, th, tz = tv.get("w", 1450), tv.get("h", 820), tv.get("z", 1200)
+        C.rect(xc - tw / 2, xc + tw / 2, tz, tz + th, fill=TX.hexc(TX.mix(T.INK, T.GREY, 0.15)), edge=T.INK,
+               lw=LW_THIN, z=4.8)
 
 
 def draw_led(C, x, z0, z1):
