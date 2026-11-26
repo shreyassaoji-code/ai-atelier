@@ -56,7 +56,6 @@ def _picture(sh, path, x, y, w, h, caption, missing):
 
 
 def sheet(m, no, total, fid):
-    from atelier.render import is_current
     g = next(x for x in m.feature_walls if x["id"] == fid)
     room = m.room(g["room"])
     u0 = min(it["from"] for it in g["items"])
@@ -82,9 +81,9 @@ def sheet(m, no, total, fid):
     ph = min(pw, (y1 - y0 - 30) / 2)
     cam = next((c for c in __import__("atelier.render", fromlist=["all_cameras"]).all_cameras(m)
                 if c.get("feature") == fid), None)
-    png = m.root / "out" / "renders" / f"V-{fid}.png"
-    ok = cam is not None and png.exists() and is_current(m.root, m, cam)
-    _picture(sh, png if ok else None, px, y0 + 2, pw, ph, f"3D view from the data · V-{fid}",
+    from atelier.frames import frame_file, picture_for
+    png, viz = picture_for(m.root, m, cam) if cam else (None, None)
+    _picture(sh, png, px, y0 + 2, pw, ph, viz or f"3D view from the data · {frame_file(cam) if cam else fid}",
              ("render not produced", "run python -m atelier.render"))
     _picture(sh, ref_path(m, g), px, y0 + ph + 12, pw, ph, "Client reference" + (f" · {Path(g['ref']).name}"
                                                                               if g.get("ref") else ""),

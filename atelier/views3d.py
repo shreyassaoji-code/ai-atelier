@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 
-from shapely.geometry import LineString, Point
+from shapely.geometry import box, LineString, Point
 
 from atelier import geom
 
@@ -89,11 +89,26 @@ def elevation_view(room, f, k):
 
 
 # ------------------------------------------------------------------ cameras
+WALL_NEAR = 1600          # a wall this close, well inside the frame, fills a side of the picture
+PENDANT_CLEAR = 700       # no eye within this of a pendant hanging near eye level: it would fill the lens
+PENDANT = 9999
+WALL = 9998               # obstacle height marking a wall sample: only counts when it is really close            # obstacle height marking a pendant: its penalty adds to the others (it glares)
+
+
 def _obstacles(m, room):
     out = [(geom.furniture_polygon(x), x["size"][2] if len(x["size"]) > 2 else 900)
            for x in m.furniture if x["room"] == room["id"] and x.get("kind") != "rug"]
     out += [(geom.joinery_polygon(j, m.wall(j["wall"]), room), j.get("z", 0) + j.get("height", 850))
             for j in m.joinery if j["room"] == room["id"]]
+    edge = geom.room_polygon(room).exterior            # bare wall right in front of the lens fills the frame
+    for k in range(0, int(edge.length), 200):
+        q = edge.interpolate(k)
+        out.append((box(q.x - 1, q.y - 1, q.x + 1, q.y + 1), WALL))
+    for c in m.ceilings:                               # pendants hanging into eye level fill the lens up close
+        if c["room"] == room["id"]:
+            for l_ in c.get("lights", []):
+                if l_.get("kind") == "pendant" and l_.get("z", 2000) < CAM["eye_z"] + 600:
+                    out.append((Point(l_["at"]).buffer(l_.get("d", 200) / 2 + 50), PENDANT))
     return out
 
 
@@ -101,7 +116,9 @@ def _blockers(m, room):
     out = [geom.furniture_polygon(x) for x in list(m.furniture) + list(m.sanitary)
            if x["room"] == room["id"] and x.get("kind") != "rug"]
     out += [geom.joinery_polygon(j, m.wall(j["wall"]), room) for j in m.joinery if j["room"] == room["id"]]
-    return out
+    out += [Point(l_["at"]).buffer(PENDANT_CLEAR - 150) for c in m.ceilings if c["room"] == room["id"]
+            for l_ in c.get("lights", []) if l_.get("kind") == "pendant" and l_.get("z", 2000) < CAM["eye_z"] + 600]
+    return out                                         # (eye positions keep 150 from these)
 
 
 def _targets(m, room):
@@ -129,15 +146,21 @@ def _targets(m, room):
 def _near_penalty(eye, yaw, lens, obstacles):
     """Things closer than NEAR_CAM to the lens inside the view: tall ones block the frame, low ones crowd it."""
     half = math.atan(18 / lens)
-    pen = 0.0
+    pen = glare = 0.0
     for g, h in obstacles:
         for x, y in list(g.exterior.coords)[:-1] + [(g.centroid.x, g.centroid.y)]:
             dx, dy = x - eye[0], y - eye[1]
             d = math.hypot(dx, dy)
             a = (math.atan2(dy, dx) - yaw + math.pi) % (2 * math.pi) - math.pi
+            if h == WALL and (d > WALL_NEAR or abs(a) > half * 0.8):
+                continue
             if d < CAM["near"] and abs(a) <= half:
-                pen = max(pen, (3.0 if h > 1000 else 1.6) * (1 - d / CAM["near"]) + 0.8)
-    return pen
+                v = (3.0 if h > 1000 else 1.6) * (1 - d / CAM["near"]) + 0.8
+                if h == PENDANT:
+                    glare = max(glare, v)
+                else:
+                    pen = max(pen, v)
+    return pen + glare
 
 
 def _view_score(poly, eye, yaw, targets, lens, obstacles=()):

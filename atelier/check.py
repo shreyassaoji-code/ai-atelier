@@ -433,6 +433,39 @@ def run(root: Path) -> Report:
                 f"design.json joinery {'/'.join(js) or '(add a unit)'} rows[].modules: add "
                 + ", ".join(f"{{\"type\": \"appliance\", \"label\": \"{names[i['kind']]}\"}}" for i in loose)
                 + " (module widths must still sum to the unit width); services then moves the points onto them")
+    # ---- 9. visualisations (agents/visualiser.md)
+    from atelier import frames as FR
+    from atelier.render import all_cameras as _cams
+    cams = _cams(m)
+    try:
+        vz = FR.viz_list(root)
+    except ValueError as e:
+        vz = []
+        R.add("9 Visualisation", "FAIL", f"out/renders/viz.json is not valid JSON ({e})", fix="out/renders/viz.json")
+    for e in vz:
+        mt = FR.VIZ_RE.match(Path(e.get("file", "")).name)
+        cam = next((c for c in cams if mt and FR._matches(mt.group(1), c)), None)
+        if cam is None:
+            R.add("9 Visualisation", "FAIL", f"{e.get('file')}: no camera or feature matches its name",
+                  fix="out/renders/viz.json file: name it viz_<camera id | frame | feature id>_<n>.png")
+            continue
+        _, _, st = FR.viz_status(root, m, cam)
+        sheet = f"feature:{cam['feature']}" if cam.get("feature") else f"room:{cam['room']}"
+        if st == "missing":
+            R.add("9 Visualisation", "FAIL", f"{e['file']} listed in viz.json but not on disk", sheet,
+                  "out/renders/viz.json: remove the entry or save the image")
+        elif st == "stale":
+            R.add("9 Visualisation", "FAIL", f"{e['file']} is older than its frame {FR.frame_file(cam)}: the album "
+                  "shows the Blender view", sheet, f"re-run the visualiser for {cam['id']}", "should")
+        else:
+            R.add("9 Visualisation", "LOOK", f"{e['file']} beside {FR.frame_file(cam)}: same furniture, openings and "
+                  f"panelling, no added text ({pg(pages, sheet)})")
+        if not e.get("caption") or not e.get("room_name"):
+            R.add("9 Visualisation", "FAIL", f"{e['file']}: caption or room_name missing", sheet,
+                  "out/renders/viz.json: add caption and room_name")
+    if not vz:
+        R.add("9 Visualisation", "PASS", f"no visualisations: the album shows the {len(cams)} Blender views as "
+                                         "rendered from the data")
     return R
 
 

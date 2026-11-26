@@ -967,8 +967,8 @@ def manifest(root: Path):
 def is_current(root: Path, m, cam):
     man = manifest(root)
     e = man.get(cam["id"])
-    png = root / "out" / "renders" / f"{cam['id']}.png"
-    return bool(e) and png.exists() and e.get("key") == _key(root, cam)
+    from atelier.frames import frame_path
+    return bool(e) and frame_path(root, cam).exists() and e.get("key") == _key(root, cam)
 
 
 def _key(root, cam):
@@ -982,7 +982,9 @@ def render(root: Path, only=None, force=False):
     todo = [c for c in cams if force or not is_current(root, m, c)]
     out = root / "out" / "renders"
     out.mkdir(parents=True, exist_ok=True)
+    from atelier.frames import frame_path, write_cameras
     if not todo:
+        write_cameras(m, root)
         print(f"renders: {len(cams)} current, nothing to do")
         return 0
     sc = Scene(m, root, sv)
@@ -992,12 +994,16 @@ def render(root: Path, only=None, force=False):
     for c in todo:
         t = time.time()
         _camera(bpy, bsc, c)
-        bsc.render.filepath = str(out / f"{c['id']}.png")
+        bsc.render.filepath = str(frame_path(root, c))
         bpy.ops.render.render(write_still=True)
         man[c["id"]] = dict(c, key=_key(root, c), seconds=round(time.time() - t, 1), samples=R["samples"],
                             size=R["size"])
         (out / "renders.json").write_text(json.dumps(man, indent=1))
-        print(f"render ✓ {c['id']}  {time.time() - t:.0f}s")
+        print(f"render ✓ {c['id']} → {frame_path(root, c).name}  {time.time() - t:.0f}s")
+        old = out / f"{c['id']}.png"                     # frames were once named by camera id
+        if old.exists() and old != frame_path(root, c):
+            old.unlink()
+    write_cameras(m, root)
     return 0
 
 

@@ -584,11 +584,12 @@ def draw_elevation(sh, m, view, k, x0, y0, s=ES):
 
 
 # ------------------------------------------------------------------ vignettes, palette, legend
-def vignette(sh, root, cam, letter, cx, cy, r):
-    png = Path(root) / "out" / "renders" / f"{cam['id']}.png"
+def vignette(sh, root, cam, letter, cx, cy, r, m=None):
+    from atelier.frames import picture_for
+    from atelier.model import load
     ring = [(cx + r * math.cos(t), cy + r * math.sin(t)) for t in np.linspace(0, 2 * math.pi, 96)]
-    from atelier.render import is_current
-    ok = png.exists() and is_current(Path(root), None, cam)
+    png, viz = picture_for(root, m or load(root), cam)
+    ok = png is not None
     if ok:
         arr = np.asarray(Image.open(png).convert("RGB")) / 255.0
         sh.image(arr, cx - r, cy - r, cx + r, cy + r, clip_rings=[(ring, [])], z=4)
@@ -605,6 +606,8 @@ def vignette(sh, root, cam, letter, cx, cy, r):
     corner = cam.get("corner")
     cap = f"{letter} · from the {corner} corner, looking {cam.get('looking')}" if corner else \
         f"{letter} · camera {cam['id']}"
+    if viz:
+        cap += " · AI visualisation"                   # never passed off as a render from the data
     sh.text(cx, cy + r + 3.4, cap, sans("dim"), T.GREY, ha="center")
     return ok
 
@@ -769,7 +772,7 @@ def board(m, no, total, rid):
         draw_elevation(sh, m, V3.elevation_view(room, f, k), k, ex, ey)
         ey += eh + 1.5
     r = L["dia"] / 2
-    produced = [vignette(sh, root, c, LETTERS[i], cx, cy, r) for i, (c, (cx, cy)) in enumerate(zip(cams, L["vig"]))]
+    produced = [vignette(sh, root, c, LETTERS[i], cx, cy, r, m) for i, (c, (cx, cy)) in enumerate(zip(cams, L["vig"]))]
     # strip
     fr.head("Palette")
     fr.y = palette_circles(sh, m, room, T.STRIP_X, fr.y - 1.5) + 1
