@@ -15,8 +15,19 @@ Check the finished album as a senior architect at a luxury studio would before i
 7. **Look (§1):** no CAD-default look, no overlapping text, labels clear of furniture, legends match symbols, `*` values explained.
 8. **Joinery:** module widths add up, heights to ceiling, appliances fit, materials referenced.
 
+## Output `out/check.json`
+
+```json
+{"must_fix":[{"sheet":12,"issue":"...","fix":"concrete change to which JSON field"}],
+"should_fix":[...], "verify_on_site":["..."], "verdict":"ready | ready after fixes | not ready"}
+```
+
 ---
 
 ### Machine pre-check
 
 `python -m atelier.check projects/<name>` runs every check above that can be measured and writes `out/check.md`: **FAIL** (measured and wrong), **PASS**, and **LOOK** (needs your eye: the items it cannot measure, with the pages to open). Start from its FAILs and LOOKs; it does not replace looking at every page.
+
+It also writes a first `out/check.json` in the format above: its FAILs (`"by": "machine"`, sheet = album page, fix = the JSON field to change, with a suggested value only when that value was tested to fit), assumed-default findings under `should_fix`, every flagged value under `verify_on_site`, and a machine verdict. Add your own findings to the lists **without** `"by": "machine"`; set your verdict with `"verdict_by": "checker"`. Both survive a re-run. `"look"` lists what is left for your eye.
+
+`python -m atelier.check projects/<name> --validate` checks your `check.json`: keys present, sheet numbers real pages, no empty issue or fix, a verdict from the three, no `ready` while `must_fix` has items, and no `ready after fixes` with nothing to fix.

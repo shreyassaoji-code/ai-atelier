@@ -148,6 +148,17 @@ On load (`atelier/features.py`) each item becomes an engine wall feature (§2 `w
 
 `{"judge": "Architect", "scores": {"A": {"brief", "function", "storage", "light", "build", "total", "why"}, "B": {…}, "C": {…}}, "winner": "A", "must_fix": ["…"]}`: one entry per `design_<X>.json` in the project; each rubric score an integer **0–20**, `total` their sum, `why` text; `winner` one of the designs; `must_fix` at least one concrete fix for the winner. `python -m atelier.scores projects/<name>` checks every file and prints the panel (totals per judge, sum, leader).
 
+## 3c. out/check.json (drafted by `atelier.check`, completed by the checker, agents/checker.md)
+
+| field | type | rule |
+|---|---|---|
+| `must_fix[]`, `should_fix[]` | object | `sheet` (album page number, or null when no single page), `issue`, `fix` (the JSON field to change and, when known, to what); `"by": "machine"` marks the pre-check's items, which a re-run replaces |
+| `verify_on_site[]` | string | every flagged value (survey, design, services defaults) plus the checker's own |
+| `verdict` | enum | `ready` · `ready after fixes` · `not ready`; `verdict_by: "checker"` keeps it across re-runs. `ready` needs an empty `must_fix` |
+| `look[]` | string | written by the machine: what it could not measure, with pages |
+
+Check with `python -m atelier.check projects/<name> --validate`.
+
 ## 4. Example: survey.json (one room, abridged)
 
 ```json
