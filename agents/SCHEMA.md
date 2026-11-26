@@ -109,7 +109,7 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 {
   "schema": "atelier/survey@1",
   "project": {"name": "Example", "address": null, "source": "plan.png", "date": "2026-11-25"},
-  "levels": {"ffl": 0, "ceiling": 2850, "soffit": 3000, "lintel": 2100, "sill": 900, "flag": ["ceiling", "soffit"]},
+  "levels": {"ffl": 0, "ceiling": 2750, "soffit": 3000, "lintel": 2100, "sill": 900, "flag": ["ceiling", "soffit"]},
   "calibration": {"image": "plan.png", "a_px": [112, 940], "b_px": [1508, 940], "a_mm": [0, 0], "b_mm": [11400, 0]},
   "walls": [
     {"id": "X1", "a": [0, 0], "b": [4000, 0], "t": 230, "align": "left", "kind": "external"},
@@ -142,7 +142,7 @@ projects/<name>/design.json    proposed interior (designer, services, …)
   "joinery": [{"id": "J1", "room": "R1", "kind": "wardrobe", "wall": "X2", "offset": 1300, "width": 1800, "depth": 600, "z": 0, "height": 2700,
                "rows": [{"height": 2100, "modules": [{"w": 600, "type": "shutter"}, {"w": 600, "type": "drawer"}, {"w": 600, "type": "shutter"}]},
                         {"height": 600, "modules": [{"w": 900, "type": "loft"}, {"w": 900, "type": "loft"}]}]}],
-  "ceilings": [{"room": "R1", "z": 2850, "steps": [{"inset": 450, "z": 2700, "light": "cove"}], "lights": [{"kind": "downlight", "at": [1000, 1000]}]}],
+  "ceilings": [{"room": "R1", "z": 2550, "steps": [{"inset": 450, "z": 2650, "light": "cove"}], "lights": [{"kind": "downlight", "at": [1000, 1000]}]}],
   "wall_features": [{"id": "WF1", "room": "R1", "wall": "X3", "offset": 400, "width": 2200, "z0": 0, "z1": 1200, "kind": "headboard", "finish": "FIN-W01"}],
   "floors": [{"room": "R1", "finish": "FIN-F01", "pattern": "plank", "module": [200, 1200], "start": "door", "skirting": 100}],
   "finishes": [{"code": "FIN-F01", "kind": "wood", "name": "Oak engineered plank", "maker": null, "ref": null},
