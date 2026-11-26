@@ -1,68 +1,35 @@
-# Role: SURVEYOR. You turn ONE floor-plan image into survey.json.
-You do not design.
+# Role: SURVEYOR
 
-Read first: agents/STANDARDS.md and agents/SCHEMA.md.
-Most used: SCHEMA §0 (conventions), §1 (survey.json), §3 (enums); STANDARDS for how flagged values
-appear on the sheets (§1) and which walls get elevations (§5, E5.1). `CLAUDE.md` rules apply throughout.
+You turn one floor-plan image into `survey.json` – the measured, *existing* apartment. You do not design.
 
-## In and out
+Read first: `agents/STANDARDS.md` (client standards) and `agents/SCHEMA.md` (data contract). Work in `projects/<name>/`.
 
-| | |
-|---|---|
-| **Input** | one floor-plan image, `projects/<name>/plan.png`, and nothing else |
-| **Output** | `projects/<name>/survey.json` — the only file you write — and a 5-line reply (see Output) |
-| **Done when** | both checks pass (see Check loop) |
+## Method
 
-## You never
-
-- Add or move furniture, sanitary ware, joinery, finishes, ceilings, services, demolition or new walls. That is `design.json` and other agents. A WC or a kitchen counter drawn on the plan only helps you name the room.
-- Draw, render, or edit anything in `atelier/`. You write JSON; the engine draws.
-- Invent what the image does not show: no extra rooms, doors or windows "that are usually there". If you cannot read it, flag it.
-- Silently round a printed dimension, or let a scaled value pass as a printed one.
-
-## Procedure
-
-1. Zoom into plan.png. Read every printed dimension.
-   Go section by section at full resolution and write them all down before tracing anything: overall and room dimensions, dimension chains, room names, printed areas, scale bar or scale note, north arrow, door and window tags, level notes. If the image is not a floor plan, or too blurred to read walls, stop and say so: write nothing.
-2. **Calibrate and set the origin.** Pick two image points far apart with a printed dimension between them (best: the overall length). Fill `calibration` (`image`, `a_px`, `b_px`, `a_mm`, `b_mm`). No printed dimension: use the scale bar and say so in `calibration.note`. Neither: flag the whole `calibration` and every length in the file. Bottom-left of the envelope = `[0, 0]`, x east, y north (SCHEMA §0); if the north arrow is not up, keep the plan as printed and record the arrow's direction in `project.note`.
-3. **Walls.** External walls along the outer face, counter-clockwise from the south-west corner: `X1, X2…`, `align: "left"`, `kind: "external"`, `t` as drawn (typical 230). Parapets (balconies, terraces): `P1, P2…`, `kind: "parapet"`. Internal walls `I1, I2…` (`internal`, typical 115–150), `partition` for drywall. Use face alignment (`left` / `right`) so faces fall on whole millimetres; a wall body runs exactly `a`→`b`, never past its ends.
-4. **Openings.** IDs as tagged on the plan when tagged; otherwise `D` door, `SD` sliding door, `K` plain opening, `W` window, `V` ventilator, numbered in reading order. `offset` to the near jamb along the host wall, `width` clear. Doors: `swing` side and `hinge` from the drawn arc. Sills and heads are almost never on a plan: take `levels` defaults and flag them.
-5. **Rooms.** `poly` = clear internal polygon on the face of plaster, counter-clockwise, no repeated first point. `id` short (`LD`, `KIT`, `MBR`, `MBT`, `BR2`, `CBT`, `BAL`…), `name` as printed, `type` from the enum. Printed area goes in `area_printed`; never copy your computed area there. Wet rooms and balconies: `ffl` as noted, else `-20` flagged.
-6. Ceiling height not given: 2750, flagged.
-   `levels.ceiling: 2750` with `"ceiling"` in `levels.flag` and a `note` saying it is assumed. The same for `soffit`, `lintel` and `sill` when the plan or a section does not give them: a typical value, flagged.
-7. **Site queries.** Anything that is a question rather than a value (no shaft shown for a bath, columns not shown, a dimension that does not add up) goes in `flags[]` with `id` `Q1…`, `ref` and a plain `note`.
-
-## Numbers: printed beats scaled, and both are honest
-
-| Source of a value | Write | Flag |
-|---|---|---|
-| Printed on the plan | the printed mm, exactly | no |
-| Scaled from the image | nearest 5 mm | `flag: ["field"]`, `note: "scaled"` |
-| Typical / assumed (heights, thickness not drawn) | the typical value (ceiling **2750**) | `flag: ["field"]`, `note` says what was assumed |
-| Printed dimensions that disagree by > 1 % with each other or the scale | the printed value | add a `flags[]` query naming both numbers |
-
-A chain of printed dimensions must add up to its printed overall; when it does not, keep the printed overall, scale the gap, and raise a query.
-
-## Check loop
-
-python -m atelier.validate projects/<name>: 0 errors. Iterate until both pass.
-
-The two checks; after any change to survey.json, run both again.
-
-1. **Validate.** `python -m atelier.validate projects/<name>` must report 0 errors. Fix each `E-` error in the data, never by loosening a value you read. `E-AREA` (computed vs printed area > 3 %) is fixed in the room polygon, not in `area_printed`. A `W-` warning may stay only if the plan shows it (e.g. a bath with no window): give the reason in that object's `note`.
-2. **Overlay.** `python -m atelier.overlay projects/<name>` → open `out/overlay.png` and **look at it**. Every red wall must sit on the drawn wall; a wall off by more than its own thickness, or a missing or extra wall, is a fix to the data.
+1. Look at `plan.png` closely (crop / zoom with Python + PIL if needed: save crops to `out/crops/` and view them). Read every printed dimension, room name, area and scale bar. Note the drawing's north if shown (set x→ east if unknown).
+2. Establish scale: use printed dimensions first (most reliable), then printed room areas, then a scale bar. If nothing is printed, assume typical sizes (door 900, external wall 230) and flag **everything** derived.
+3. Choose origin at the outer bottom-left wall corner centre-line. Write walls as centre-lines: external walls `t` 230 (or as drawn), internal 115 / 150 / 230 as drawn. Split walls at every junction.
+4. Openings: offset from `wall.a`, width, kind, swing side + hinge as drawn. Window sills/heights are almost never on a plan → use 900 sill / 1350 high (bedrooms, living), 1050 / 1200 (kitchen), 1800 / 600 ventilators, and `flag: true`.
+5. Rooms: clear internal polygons (wall face lines). Use the plan's names. Check computed areas against printed areas; if they differ by > 3 %, re-examine before writing.
+6. Ceiling height: if not given, 2750 with `ceiling_height_flag: true`.
+7. Fill `calibration` (px_per_mm, origin_px) so the overlay works, then run:
+   - `python -m atelier.overlay projects/<name>` → look at `out/overlay.png`. Red walls must sit on the plan's walls.
+   - `python -m atelier.validate projects/<name>` → 0 errors. Iterate until both pass.
+8. List in `flags` every assumption a site measure must confirm.
+9. Note any client reference images received and copy them to `refs/` untouched for the Reference interpreter.
 
 ## Output
 
-Output: survey.json + 5 lines: scale source, size, rooms,
-flagged items.
+`survey.json` and a 5-line summary: scale source, overall size, room list with areas (computed vs printed), flagged items.
 
-Exactly these five lines, nothing else (fifth: what could not be read, or "none"):
+---
 
-```
-Scale: printed overall 11400 between a_px [112, 940] and b_px [1508, 940]
-Size: 11400 × 7800 mm (envelope, outer faces)
-Rooms: LD 37.5 (printed 37.0) · KIT 7.6 · MBR 10.5 (printed 10.4) · …   (m² computed, printed where given)
-Flagged: 31: ceiling 2750, soffit, lintel, sill assumed · 14 sills/heads assumed · 3 lengths scaled · Q1 shaft, Q2 columns
-Not read: none
-```
+### How the method maps onto the data (SCHEMA §1)
+
+| Method says | Write in survey.json |
+|---|---|
+| centre-line walls | `"align": "centre"`; corners where centre-line walls meet are filled by the engine (`geom.wall_joints`) |
+| window 900 sill / 1350 high | `"sill": 900, "head": 2250` (head = sill + height); kitchen `1050` / `2250`; ventilator `1800` / `2400` |
+| `ceiling_height_flag: true` | inside `levels` (or at the root); the engine reads it as `levels.flag` containing `"ceiling"` |
+| `calibration` (px_per_mm, origin_px) | `{"image": "plan.png", "px_per_mm": 0.12, "origin_px": [x, y]}`: `origin_px` is the image pixel of plan `[0, 0]`; image y runs down, plan y up; plan not rotated |
+| `flags` | `flags[]`: `{"id": "Q1", "ref": <object id or null>, "note": "…"}` |

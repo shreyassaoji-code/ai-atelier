@@ -90,6 +90,18 @@ def _collect_flags(kind, objs, file_flag, out):
                 out.append((ref, fld, o.get("note", "")))
 
 
+def calibration_pairs(cal: dict) -> dict:
+    """Calibration as two point pairs. Also accepts the surveyor's shorthand `px_per_mm` + `origin_px`
+    (plan [0, 0] at that pixel, image y down, plan not rotated) and fills a_px/b_px/a_mm/b_mm from it."""
+    cal = dict(cal or {})
+    if cal.get("px_per_mm") and cal.get("origin_px") and not cal.get("a_px"):
+        ox, oy = cal["origin_px"]
+        k = cal["px_per_mm"]
+        cal.update(a_px=[ox, oy], b_px=[ox + k * 1000, oy], a_mm=[0, 0], b_mm=[1000, 0])
+    cal.setdefault("image", "plan.png" if cal.get("a_px") else None)
+    return cal
+
+
 def load(root, design: str | None | bool = None) -> Model:
     """design=None: design.json if present; a file name/path: that design; False: survey only."""
     root = Path(root)
@@ -99,6 +111,12 @@ def load(root, design: str | None | bool = None) -> Model:
               calibration=sv.get("calibration", {}), walls=copy.deepcopy(sv.get("walls", [])),
               openings=copy.deepcopy(sv.get("openings", [])), rooms=copy.deepcopy(sv.get("rooms", [])),
               flags=list(sv.get("flags", [])), sources=["survey.json"])
+    # surveyor shorthand: "ceiling_height_flag": true (in levels or at the root) = levels.flag has "ceiling"
+    if m.levels.pop("ceiling_height_flag", False) or sv.get("ceiling_height_flag"):
+        fl = m.levels.get("flag")
+        if fl is not True:
+            m.levels["flag"] = sorted(set(fl or []) | {"ceiling"})
+    m.calibration = calibration_pairs(m.calibration)
     m.survey_walls = copy.deepcopy(m.walls)
     m.survey_openings = copy.deepcopy(m.openings)
     m.rooms_survey = copy.deepcopy(m.rooms)

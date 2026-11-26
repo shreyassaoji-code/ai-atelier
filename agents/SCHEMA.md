@@ -27,15 +27,15 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 |---|---|---|
 | `schema` | `"atelier/survey@1"` | |
 | `project` | object | `name`, `address`, `source` (plan image file or `null`), `date` (`YYYY-MM-DD`) |
-| `levels` | object | `ffl` (0), `ceiling` (finished ceiling), `soffit` (slab underside), `lintel` (door/window head), `sill` (default window sill) |
-| `calibration` | object | `image`, `a_px`, `b_px` (two image points), `a_mm`, `b_mm` (the same points in plan mm). `image: null` for hand-made plans. |
+| `levels` | object | `ffl` (0), `ceiling` (finished ceiling), `soffit` (slab underside), `lintel` (door/window head), `sill` (default window sill). `ceiling_height_flag: true` (here or at the root) = `"ceiling"` in `flag` |
+| `calibration` | object | `image` (default `plan.png`), then **either** `px_per_mm` + `origin_px` (image pixel of plan `[0, 0]`; plan not rotated) **or** `a_px`, `b_px` (two image points) + `a_mm`, `b_mm` (the same points in plan mm; allows rotation). `image: null` for hand-made plans. |
 | `walls[]` | object | `id`, `a`, `b` (ends of the wall body), `t` (thickness), `align`, `kind`, `height` (optional, default `levels.soffit`) |
 | `openings[]` | object | `id`, `wall`, `offset` (to the near jamb), `width`, `kind`, `swing`, `hinge`, `sill`, `head` |
 | `rooms[]` | object | `id`, `name`, `type`, `poly` (clear internal polygon, face of plaster), `ffl` (optional, default 0), `area_printed` (m², optional: as printed on the plan) |
 | `flags[]` | object | site queries not tied to one value: `id`, `ref` (object id or `null`), `note` |
 
 **Walls**: `align` says where the line `a→b` sits in the wall body:
-`centre` (body ±t/2 either side), `left` (body lies to the left of the line, so the line is the body's right-hand face), `right` (body lies to the right). An external wall drawn counter-clockwise along its outer face is therefore `left`. Use face alignment so faces stay on integer mm. The body is exactly from `a` to `b`: walls are not extended at the ends.
+`centre` (body ±t/2 either side), `left` (body lies to the left of the line, so the line is the body's right-hand face), `right` (body lies to the right). An external wall drawn counter-clockwise along its outer face is therefore `left`. The surveyor writes centre-lines (`centre`, split at every junction, origin on the bottom-left corner's centre-line); face lines (`left` / `right`) are equally valid. The body is exactly from `a` to `b`: walls are not extended at the ends, except that where centre-line walls share an end point the engine fills the corner with a square of each wall's thickness (`geom.wall_joints`).
 
 **Openings**: the leaf swings to the `swing` side of the host wall; `hinge` is the jamb at `offset` (`start`) or at `offset + width` (`end`). The hinge point lies on the face of the swing side.
 

@@ -70,8 +70,28 @@ def face_offset(wall, side: str) -> float:
     return hi if side == "left" else lo
 
 
+def wall_joints(walls):
+    """Corner fill for centre-line walls: a wall body stops exactly at a and b, so two centre-line
+    walls meeting at an end point leave the outer corner empty. Each centre-line wall gets a square
+    of its own thickness at an end it shares with another wall. Face-aligned walls already meet
+    exactly and get nothing (a square would stick out past the face)."""
+    ends = [(tuple(w["a"]), w["id"]) for w in walls] + [(tuple(w["b"]), w["id"]) for w in walls]
+    out = []
+    for w in walls:
+        if w.get("align", "centre") != "centre":
+            continue
+        ux, uy, _ = unit(w["a"], w["b"])
+        nx, ny = left_normal(ux, uy)
+        h = w["t"] / 2
+        for p in (w["a"], w["b"]):
+            if any(i != w["id"] and abs(q[0] - p[0]) < 1 and abs(q[1] - p[1]) < 1 for q, i in ends):
+                out.append(Polygon([(p[0] + su * ux * h + sn * nx * h, p[1] + su * uy * h + sn * ny * h)
+                                    for su, sn in ((-1, -1), (1, -1), (1, 1), (-1, 1))]))
+    return out
+
+
 def walls_union(walls):
-    return unary_union([wall_polygon(w) for w in walls])
+    return unary_union([wall_polygon(w) for w in walls] + wall_joints(walls))
 
 
 # ------------------------------------------------------------------ openings

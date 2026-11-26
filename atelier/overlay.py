@@ -65,6 +65,11 @@ def overlay(root: Path, out: Path | None = None) -> Path | None:
     lw = max(0.6, W / 3000)
     for w in m.walls:
         poly = geom.wall_polygon(w)
+        for j in geom.wall_joints(m.walls):                   # centre-line corners, as the plans draw them
+            if j.intersects(poly):
+                poly = poly.union(j)
+        if poly.geom_type != "Polygon":
+            poly = poly.convex_hull
         pts = [f(*c) for c in poly.exterior.coords]
         path = MplPath(pts, [MplPath.MOVETO] + [MplPath.LINETO] * (len(pts) - 2) + [MplPath.CLOSEPOLY])
         ax.add_patch(PathPatch(path, facecolor=T.RED, edgecolor=T.RED, alpha=0.28, lw=0))
@@ -72,7 +77,7 @@ def overlay(root: Path, out: Path | None = None) -> Path | None:
         cx, cy = f(*poly.centroid.coords[0])
         ax.text(cx, cy, w["id"], fontproperties=sans("legend", 600), color=T.RED, ha="center", va="center",
                 fontsize=max(6, W / 400))
-    ax.text(W * 0.01, H * 0.985, f"Survey walls (red) over {src.name} · calibration {cal['a_mm']}→{cal['b_mm']} mm",
+    ax.text(W * 0.01, H * 0.985, f"Survey walls (red) over {src.name} · calibration {str(cal['px_per_mm']) + ' px/mm · ' if cal.get('px_per_mm') else ''}{cal['a_mm']}→{cal['b_mm']} mm",
             fontproperties=sans("legend", 600), color=T.RED, fontsize=max(7, W / 330), va="bottom")
     out = out or (root / "out" / "overlay.png")
     out.parent.mkdir(parents=True, exist_ok=True)
