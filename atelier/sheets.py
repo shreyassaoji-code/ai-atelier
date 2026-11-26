@@ -18,7 +18,7 @@ from atelier.draw import (DASH, LW_HAIR, LW_LINE, LW_THIN, PlanView, Sheet, enve
 from atelier.symbols import north_arrow, number_tag, scale_bar
 
 DISCLAIMER = "Drafted with AI - not for construction until checked and signed"
-FLAG_KEY = "* assumed, not read from the plan: verify on site (list on the measured drawing)"
+FLAG_KEY = "* assumed, not read from the plan: to verify on site (list on the measured drawing)"
 SCALES = (20, 25, 50, 75, 100, 200)
 DIM_MARGIN = 30          # page mm kept clear round the plan for dimension chains
 LINE = 3.6               # strip line pitch (mm)
@@ -120,8 +120,8 @@ class Frame:
                 first = False
 
     def verify_list(self):
-        """'Verify on site': every flagged value in the model, grouped."""
-        self.head("Verify on site", T.FLAG)
+        """'To verify on site': every flagged value in the model, grouped (client standard §7)."""
+        self.head("To verify on site", T.FLAG)
         groups: OrderedDict = OrderedDict()
         notes = []
         for ref, fld, note in self.m.verify:
@@ -916,7 +916,7 @@ def wall_finishes(m, no, total):
 
 # ---- furniture marking -----------------------------------------------------------
 def furniture_plan(m, no, total):
-    sh, fr, pv, scale = _plan_setup(m, "Furniture plan", "Loose furniture marking · scale 1:{scale}", no, total)
+    sh, fr, pv, scale = _plan_setup(m, "Furniture marking plan", "Loose furniture marking · scale 1:{scale}", no, total)
     base_plan(pv, m, wall_fill=T.POCHE, opening_color=T.GREY)
     for j in m.joinery:
         draw_joinery(pv, j, m.wall(j["wall"]), m.room(j["room"]), "line", label=True)
@@ -971,5 +971,5 @@ SHEET_DEFS = OrderedDict(
     presentation=(presentation, "Presentation plan", True),
     flooring=(flooring, "Flooring plan", True),
     wall_finishes=(wall_finishes, "Wall finish plan", True),
-    furniture=(furniture_plan, "Furniture plan", True),
+    furniture=(furniture_plan, "Furniture marking plan", True),
 )

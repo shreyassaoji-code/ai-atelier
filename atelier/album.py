@@ -28,10 +28,10 @@ from pypdf import PdfReader, PdfWriter
 from atelier import theme as T
 from atelier.registry import SHEET_DEFS, SHEETS
 
-# STANDARDS §2: the album order. "family:*" expands to one page per item, in data order.
-ORDER = ["cover", "contents", "measured", "dismantling", "partitions", "presentation", "furniture", "room:*", "feature:*",
-         "flooring", "wall_finishes", "ceiling", "sections", "power", "lighting", "switching", "plumbing", "ac",
-         "elevation:*", "dt01", "dt02", "joinery:*"]
+# STANDARDS §2 (client standard §2): the album order. "family:*" expands to one page per item, in data order.
+ORDER = ["cover", "contents", "measured", "dismantling", "partitions", "presentation", "room:*", "axonometry",
+         "doors_windows", "flooring", "ac", "plumbing", "ceiling", "sections", "lighting", "switching", "power",
+         "wall_finishes", "elevation:*", "feature:*", "furniture", "dt01", "dt02", "joinery:*", "visualisations"]
 MM_PT = 72 / 25.4
 A3 = (T.PAGE_W * MM_PT, T.PAGE_H * MM_PT)
 

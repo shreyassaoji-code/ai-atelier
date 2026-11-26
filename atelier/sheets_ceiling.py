@@ -616,7 +616,39 @@ def sections(m, no, total):
               "ceiling plan.", None),
         ("6", "Joints taped, jointed and finished to a smooth paint-ready surface.", None),
     ], max_chars=56)
+    _reference_thumbs(sh, fr, m)
     return sh
+
+
+def _reference_thumbs(sh, fr, m):
+    """Client reference thumbnails (client standard §3): ceiling refs first, else any image in refs/."""
+    from pathlib import Path as _P
+
+    import numpy as np
+    from PIL import Image
+    refs = []
+    for c in m.ceilings:
+        if c.get("ref"):
+            p = m.root / c["ref"]
+            if p.exists():
+                refs.append(p)
+    d = m.root / "refs"
+    if not refs and d.exists():
+        refs = sorted(p for p in d.iterdir() if p.suffix.lower() in (".png", ".jpg", ".jpeg", ".webp"))
+    fr.head("Client references")
+    if not refs:
+        fr.lines([("", "None on file (refs/): add the client's ceiling references to show them here.", None)],
+                 color=T.GREY)
+        return
+    w = (T.RIGHT - T.STRIP_X - 4) / 3
+    for i, p in enumerate(refs[:3]):
+        im = Image.open(p).convert("RGB")
+        k = min(w / im.size[0], w / im.size[1])
+        dw, dh = im.size[0] * k, im.size[1] * k
+        x = T.STRIP_X + i * (w + 2)
+        sh.image(np.asarray(im) / 255.0, x, fr.y, x + dw, fr.y + dh, z=4)
+        sh.text(x, fr.y + dh + 2.4, _P(p).name[:18], sans("dim"), T.GREY)
+    fr.y += w + 5
 
 
 SHEET_DEFS = OrderedDict(

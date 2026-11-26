@@ -676,7 +676,29 @@ def key_plan(sh, m, F, x0, y0, w):
     # mark the viewer's left corner
     sh.circle(bb[0], bb[1], 0.8, edge=T.INK, fill=T.PAPER, lw=LW_THIN)
     sh.ax.patches[-1].set_zorder(6)
+    # a letter on every wall of the room (the same letters as the elevation sheets' points schedules)
+    letters = wall_letters(m, F.room["id"])
+    poly = geom.room_polygon(F.room)
+    for f in geom.room_faces(F.room, m.walls):
+        L = letters.get(f.wall)
+        if not L or f.length < 300:
+            continue
+        mx_, my_ = (f.a[0] + f.b[0]) / 2, (f.a[1] + f.b[1]) / 2
+        inward = min(((mx_ + dx, my_ + dy) for dx, dy in ((350, 0), (-350, 0), (0, 350), (0, -350))),
+                     key=lambda p: poly.exterior.distance(geom.Point(p)) if poly.contains(geom.Point(p)) else 1e9)
+        px, py = pv.P(*inward)
+        sh.text(px, py, L, sans("dim", 700), T.ACCENT if f.wall != F.wall["id"] else T.INK, ha="center", va="center",
+                zorder=7)
     return y0 + (b[3] - b[1]) / scale + 2, scale
+
+
+def wall_letters(m, room_id):
+    """A, B, C … for a room's walls, in the order its elevation sheets come (parts share a letter)."""
+    out = {}
+    for v in elevation_views(m):
+        if v["room"] == room_id and v["wall"] not in out:
+            out[v["wall"]] = chr(ord("A") + len(out))
+    return out
 
 
 def elevation_sheet(m, no, total, view_id):
@@ -699,17 +721,19 @@ def elevation_sheet(m, no, total, view_id):
     xs = min(xs, x1 - 66)
     ys = ey0 + 34
     sh.caps(xs, ys, "Points schedule", T.INK, role="legend_head", weight=600)
-    cols = [(xs, "ID"), (xs + 19, "Type"), (xs + 46, "h"), (xs + 58, "x")]
+    letter = wall_letters(m, room["id"]).get(F.wall["id"], "")
+    cols = [(xs, "Wall"), (xs + 9, "ID"), (xs + 27, "Type"), (xs + 50, "h"), (xs + 60, "x")]
     for cx, hd in cols:
         sh.caps(cx, ys + 6, hd, T.GREY)
     sh.rule(xs, x1, ys + 7.6, T.INK)
     y = ys + 11.5
     for p in pts:
         kind = p["kind"].replace("_", " ")
-        sh.text(cols[0][0], y, p["id"], sans("dim", 600), T.INK)
-        sh.text(cols[1][0], y, kind[:16] + (" " + p["ip"] if p.get("ip") else ""), sans("dim"), T.INK)
-        sh.text(cols[2][0] + 8, y, str(p["z"]), sans("dim"), T.INK, ha="right")
-        sh.text(cols[3][0] + 8, y, str(round(p["x"])), sans("dim"), T.INK, ha="right")
+        sh.text(cols[0][0], y, letter, sans("dim", 700), T.ACCENT)
+        sh.text(cols[1][0], y, p["id"], sans("dim", 600), T.INK)
+        sh.text(cols[2][0], y, kind[:14] + (" " + p["ip"] if p.get("ip") else ""), sans("dim"), T.INK)
+        sh.text(cols[3][0] + 6, y, str(p["z"]), sans("dim"), T.INK, ha="right")
+        sh.text(cols[4][0] + 6, y, str(round(p["x"])), sans("dim"), T.INK, ha="right")
         sh.rule(xs, x1, y + 1.4)
         y += 3.6
 
@@ -733,17 +757,20 @@ def elevation_sheet(m, no, total, view_id):
             tone = {"paint": TX.mix(T.PAPER, T.LIGHT, 0.4), "fabric": TX.palette()["fabric"],
                     "laminate": TX.palette()["joinery"]}[f["kind"]]
             arr = np.ones((60, 90, 3)) * tone
-        sh.image(arr, sx, ky, sx + 12, ky + 8, z=4)
-        sh.swatch(sx, ky, 12, 8, edge=T.INK, lw=LW_HAIR)
-        sh.text(sx + 14, ky + 2.6, code, sans("dim", 700), T.INK)
+        r_, cx_, cy_ = 4.5, sx + 4.5, ky + 4.5                     # swatch circle (client standard §5)
+        ring = [(cx_ + r_ * math.cos(t), cy_ + r_ * math.sin(t)) for t in [i_ * math.pi / 32 for i_ in range(65)]]
+        sh.image(arr, cx_ - r_, cy_ - r_, cx_ + r_, cy_ + r_, clip_rings=[(ring, [])], z=4)
+        sh.circle(cx_, cy_, r_, edge=T.INK, lw=LW_HAIR)
+        sh.text(sx + 12, ky + 2.6, code, sans("dim", 700), T.INK)
         for k, ln in enumerate([f["name"][:26], f["name"][26:52]]):
             if ln:
-                sh.text(sx + 14, ky + 5.4 + k * 2.4, ln.strip(), sans("dim"), T.GREY)
+                sh.text(sx + 12, ky + 5.4 + k * 2.4, ln.strip(), sans("dim"), T.GREY)
 
     # strip: key plan, legend, bubbles
     fr.head("Key plan")
     fr.y, kscale = key_plan(sh, m, F, T.STRIP_X, fr.y - 1, T.RIGHT - T.STRIP_X)
-    sh.text(T.STRIP_X, fr.y + 1.5, f"1:{kscale} · thick line = this wall, ○ = left corner", sans("dim"), T.GREY)
+    sh.text(T.STRIP_X, fr.y + 1.5, f"1:{kscale} · letters = the room's walls, thick line = this wall "
+            f"({letter}), ○ = left corner", sans("dim"), T.GREY)
     fr.y += 6
     fr.rule()
     fr.legend([

@@ -333,6 +333,12 @@ def power(m, no, total):
     services_base(pv, m, items=items)
     _draw_points(sh, pv, items, lambda k: T.INK)
     _finish(fr, sh, items, POWER_KINDS, lambda k: T.INK, "Power schedule")
+    for db in [i for i in items if i["kind"] == "db" and i.get("protection")]:
+        p = db["protection"]
+        fr.y += 1
+        fr.lines([("RCCB", f"{db['id']}: RCCB {p['rccb_ma']} mA on the wet-room circuits ("
+                   + ", ".join(p["wet_rooms"]) + ")" + (" and on every socket circuit" if p.get("socket_circuits")
+                                                         else "") + " (R6.9).", None)])
     return sh
 
 

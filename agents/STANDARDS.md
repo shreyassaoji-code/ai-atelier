@@ -71,13 +71,13 @@ Font files live in `fonts/`. Code finds them by the family name stored inside ea
 - Sheet builders (`atelier/sheets.py`) draw only through `atelier.draw` / `atelier.symbols` and `theme` tokens.
 - Every sheet: title band, sheet number `NN / NN`, project fields, Checked / Signed lines, and the line `Drafted with AI - not for construction until checked and signed`. Plan sheets also: legend, north arrow, scale bar.
 - Plans: walls cut solid (`POCHE`) with openings cut out; door = leaf at 90° + `GREY` hairline swing arc; window = triple line (frame, glass, frame); opening without shutter = dotted head lines.
-- Measured plan: three dimension chains per side (openings, rooms + walls, overall); flagged values in `FLAG` with `*`; full "verify on site" list in the strip.
+- Measured plan: three dimension chains per side (openings, rooms + walls, overall); flagged values in `FLAG` with `*`; full "To verify on site" list in the strip (client standard §7 wording).
 - Presentation plan: procedural floor per room from `floors[]` + `finishes[]`; soft shadows offset to the bottom-right; furniture in fills; room names in tracked caps with area; no dimensions; legend shows floor swatches.
 - Code sheets: flooring `FL-n` (laying joints, direction arrow for planks, joint-centre mark for tiles), wall finishes `WFn` (a band on every face, tags with z range for features), furniture `Fn` (outlines, circled tags, W × D × H schedule).
 
 ## 2. Album structure
 
-Source: brief of 2026-11-25. The order is kept in `atelier/album.py` (`ORDER`); `tests/test_album.py` fails if this table and the code disagree. Families (`room:`, `elevation:`, `joinery:`) give one page per item, in data order.
+Source: brief of 2026-11-25; order and sheet list from the client standard (Xelion Labs) §2, 2026-11-26. The order is kept in `atelier/album.py` (`ORDER`); `tests/test_album.py` fails if this table and the code disagree. Families (`room:`, `elevation:`, `joinery:`) give one page per item, in data order.
 
 | # | Key | Sheet | One page per |
 |---|---|---|---|
@@ -87,22 +87,25 @@ Source: brief of 2026-11-25. The order is kept in `atelier/album.py` (`ORDER`); 
 | 4 | `dismantling` | Dismantling plan | album |
 | 5 | `partitions` | Partition plan | album |
 | 6 | `presentation` | Presentation plan | album |
-| 7 | `furniture` | Furniture plan | album |
-| 8 | `room:*` | Room boards (§2a) | bedroom, living, kitchen |
-| 8a | `feature:*` | Feature wall sheets (§4) | feature wall written by the reference interpreter |
-| 9 | `flooring` | Flooring plan | album |
-| 10 | `wall_finishes` | Wall finish plan | album |
-| 11 | `ceiling` | Ceiling plan | album |
-| 12 | `sections` | Ceiling sections | album |
-| 13 | `power` | Power plan | album |
-| 14 | `lighting` | Lighting plan | album |
-| 15 | `switching` | Switching plan | album |
-| 16 | `plumbing` | Plumbing plan | album |
-| 17 | `ac` | Air-conditioning plan | album |
-| 18 | `elevation:*` | Elevations (§5) | `views[]` of kind `elevation` |
-| 19 | `dt01` | Details DT-01 (§5a) | album |
-| 20 | `dt02` | Details DT-02 (§5a) | album |
-| 21 | `joinery:*` | Joinery boards (§5b) | `joinery[]` item |
+| 7 | `room:*` | Room boards (§2a) | bedroom, living, kitchen |
+| 8 | `axonometry` | Axonometry (A2.6) | album |
+| 9 | `doors_windows` | Doors and windows (A2.7) | album |
+| 10 | `flooring` | Flooring plan | album |
+| 11 | `ac` | Air-conditioning plan | album |
+| 12 | `plumbing` | Plumbing plan | album |
+| 13 | `ceiling` | Ceiling plan | album |
+| 14 | `sections` | Ceiling sections | album |
+| 15 | `lighting` | Lighting plan | album |
+| 16 | `switching` | Switching plan | album |
+| 17 | `power` | Power plan | album |
+| 18 | `wall_finishes` | Wall finish plan | album |
+| 19 | `elevation:*` | Elevations (§5) | `views[]` of kind `elevation` |
+| 20 | `feature:*` | Feature wall sheets (§4) | feature wall written by the reference interpreter |
+| 21 | `furniture` | Furniture marking plan | album |
+| 22 | `dt01` | Details DT-01 (§5a) | album |
+| 23 | `dt02` | Details DT-02 (§5a) | album |
+| 24 | `joinery:*` | Joinery boards (§5b) | `joinery[]` item |
+| 25 | `visualisations` | Visualisations (A2.8) | album |
 
 | Rule | Requirement (tick or fail) |
 |---|---|
@@ -111,10 +114,13 @@ Source: brief of 2026-11-25. The order is kept in `atelier/album.py` (`ORDER`); 
 | A2.3 | `out/album.pdf` is vector, A3 landscape, one page per sheet; `out/pages/NN.png` is the preview of page NN. |
 | A2.4 | `album.pdf` is replaced only by a complete build in which every page was made and the merged file checked (page count, A3). A partial build splices its pages into an album made from the same page list, or leaves `album.pdf` untouched. A build never leaves `album.pdf` with fewer pages than its page list. |
 | A2.5 | `python -m atelier.build projects/` runs validate → services → 3D → album for every project; `--no-render` skips 3D. |
+| A2.6 | Axonometry: one white-model axonometric per board room (`ax_<room>.png`, `atelier/render3d.py`), framed and centred on the room, captioned; a missing or stale frame is an empty box marked RENDER NOT PRODUCED. |
+| A2.7 | Doors and windows: a schedule of every opening (ID, type, rooms it joins, wall, width, height, sill, head, operation, existing / new) and one 1:50 type drawing per distinct opening (frame, opening diagonals with the apex at the hinge, sliding arrows, glazing and sill; width, height and sill dimensioned); flagged values print with `*`. |
+| A2.8 | Visualisations: the feature-wall views and one corner view per room without one (max 6). A current image-service visualisation (`viz.json`) is shown captioned "AI visualisation"; otherwise the white-model frame captioned "white model, not photoreal", and the sheet says none has been produced. Never a photoreal claim without the image. |
 
 ## 2a. Room boards (RB sheets)
 
-Source: brief of 2026-11-25. **(default)** = Atelier default, not from the brief.
+Source: brief of 2026-11-25; order and sheet list from the client standard (Xelion Labs) §2, 2026-11-26. **(default)** = Atelier default, not from the brief.
 
 | Rule | Requirement (tick or fail) |
 |---|---|
@@ -129,7 +135,7 @@ Source: brief of 2026-11-25. **(default)** = Atelier default, not from the brief
 
 ## 3. Ceilings
 
-Source: brief of 2026-11-25. Values marked **(default)** are Atelier defaults, not from the brief; confirm per project.
+Source: brief of 2026-11-25; order and sheet list from the client standard (Xelion Labs) §2, 2026-11-26. Values marked **(default)** are Atelier defaults, not from the brief; confirm per project.
 
 | Rule | Requirement (tick or fail) |
 |---|---|
@@ -144,6 +150,7 @@ Source: brief of 2026-11-25. Values marked **(default)** are Atelier defaults, n
 | C3.9 | A **1:5** cove detail: RCC slab, suspension rod, GI channel, 12.5 gypsum board, upstand lip, aluminium LED profile with diffuser; dimensioned trough and step heights. |
 | C3.10 | Cove geometry **(default)**: trough **150** wide on the raised side of the step edge; upstand **75** or half the step, whichever is less; board **12.5**; GI ceiling section @ **450** c/c; rods @ **1200** c/c; slab **150**; LED **24 V, 2700 K** in aluminium profile with opal diffuser. |
 | C3.11 | The slab soffit comes from `levels.soffit`; when flagged it prints with `*` on both sheets. |
+| C3.13 | The sections sheet shows the client's reference thumbnails (`ceilings[].ref`, else the images in `refs/`, max 3), or says that none is on file. |
 | C3.12 | Every false-ceiling level (base, steps, core) is at least **150** below the slab soffit (`E-CEIL`); domes may rise to 50 below. Trays have **1–2** steps with bands **350–600** (designer brief; `W-CEIL` otherwise). Bedrooms, living/dining and foyer get a tray; baths and kitchen are flat. |
 
 ## 4. Feature walls
@@ -163,7 +170,7 @@ Source: brief of 2026-11-26 (`agents/reference.md`). **(default)** = Atelier def
 
 ## 5. Elevation detail (1:25)
 
-Source: brief of 2026-11-25. No reference sheet received yet: layout to be matched to the studio's kitchen sink wall. **(default)** = Atelier default.
+Source: brief of 2026-11-25; order and sheet list from the client standard (Xelion Labs) §2, 2026-11-26. No reference sheet received yet: layout to be matched to the studio's kitchen sink wall. **(default)** = Atelier default.
 
 | Rule | Requirement (tick or fail) |
 |---|---|
@@ -174,12 +181,12 @@ Source: brief of 2026-11-25. No reference sheet received yet: layout to be match
 | E5.5 | A red (`FLAG`) wiring drop from the false ceiling to every electrical point. |
 | E5.6 | Material tags with leaders: wall finish `WFn`, feature wall `FWn`, joinery board `MBn`, worktop `WTn`, floor `FL-n`. |
 | E5.7 | Joinery modules numbered `J<n>.<module>` in data order; shutters show the swing (dashed, apex at the hinge), drawers their fronts, plinth **100** and worktop **30** (designer brief: plinth 100 + base 750 + worktop 30); sinks show bowl and mixer, hobs and appliances their outline. |
-| E5.8 | Vertical code rail (height zones) and horizontal code rail (zones along the wall); finish key with swatches of every code on the sheet. |
+| E5.8 | Vertical code rail (height zones) and horizontal code rail (zones along the wall); finish key with a **swatch circle** of every code on the sheet. |
 | E5.9 | Level markers in metres: `FFL ±0.000`, `FCL +x.xxx`, `SOFFIT +x.xxx` (flagged with `*` when unverified). |
 | E5.10 | Skirting drawn **only** on bare wall (not behind joinery, not across openings), at the floor's `skirting` height. |
 | E5.11 | Walls cut at both ends in poche, at their real thickness. |
 | E5.12 | Detail bubbles, only where the element is on that wall: **1** cove (room has a cove step), **2** wall panel with LED reveal (panelling/fluted feature), **3** skirting (bare wall) → **DT-01**; **4** concealed flush door (door opening), **5** worktop + gola + base unit (kitchen base / vanity), **6** wardrobe section (wardrobe) → **DT-02**. |
-| E5.13 | Chains: a vertical level chain, a horizontal module chain and an overall dimension; a room key plan marking the wall and view direction; a points schedule (id, type, height, x). |
+| E5.13 | Chains: a vertical level chain, a horizontal module chain and an overall dimension; a room key plan marking the wall and view direction, with a **letter on every wall of the room** (A, B … in the order of the room's elevation sheets); a points schedule (wall letter, id, type, height, x from the left corner). |
 
 ### 5a. Details (DT sheets)
 
@@ -206,7 +213,7 @@ Source: brief of 2026-11-25. No reference sheet received yet: layout to be match
 
 ## 6. Engineering defaults (services)
 
-`python -m atelier.services projects/` writes `projects/<name>/services.json` from these rules, then applies `services_overrides.json`. Every generated item carries `"rule": "R6.n"`. Heights `hNNN` are mm from FFL to the centre of the device unless stated. Source: brief of 2026-11-25. Values marked **(default)** were not in the brief; they are Atelier defaults and must be confirmed.
+`python -m atelier.services projects/` writes `projects/<name>/services.json` from these rules, then applies `services_overrides.json`. Every generated item carries `"rule": "R6.n"`. Heights `hNNN` are mm from FFL to the centre of the device unless stated. Source: brief of 2026-11-25; order and sheet list from the client standard (Xelion Labs) §2, 2026-11-26. Values marked **(default)** were not in the brief; they are Atelier defaults and must be confirmed.
 
 | Rule | Requirement (tick or fail) |
 |---|---|
@@ -218,12 +225,12 @@ Source: brief of 2026-11-25. No reference sheet received yet: layout to be match
 | R6.6 | TV wall (services brief): TV point **h1100** behind the TV, centred on the TV unit; double socket, LAN and media (HDMI conduit) at **h550** above the console, 250 apart. |
 | R6.7 | Kitchen worktop: socket at **h1100** every **~900** along each base run, none within **150** of a sink or hob module. |
 | R6.7a | Kitchen (services brief): chimney point **h2200** over each hob; RO point **h1800** beside the kitchen sink, clear of windows; fridge **h300**, oven **16A h300**, microwave **h1600**, dishwasher **16A h300** with cold and drain **h300** **(default heights)** at the modules labelled for them; with no such module, a default on the kitchen's longest free wall (fridge, oven / microwave) or the base module next to the sink (DW), each **flagged** for the designer. Worktop sockets never on a window. |
-| R6.8 | Wet rooms: geyser **16A** point at **h2000** on the wall nearest the shower; exhaust in the external ventilator, or ceiling exhaust when the room has no external wall; IP44 socket at **h1100** beside the vanity; **mirror light** IP44 at **h1950** over each vanity. Washing machine: IP44 16A socket **h1100**, cold inlet h1000, drain h600 (R6.14) and a floor trap in front of it. Balcony: one IP44 socket h1100 on its longest free non-parapet wall. |
-| R6.9 | Main entry (services brief): DB at **h1800** on the hinge side, **400** from the jamb; VDP at **h1450** on the latch side beyond the switch; router at **h2100** beside the DB. |
-| R6.10 | AC in living and bedrooms: **ducted** (`ac_ducted`) if the room has a feature wall **and** a tray ceiling; otherwise **split**. Ducted: unit above the ceiling by an external wall that is **not** the feature wall, outdoor unit outside it; **linear slot diffuser in the ceiling band opposite the feature wall** (20–80 % of that face, midway between wall and step); return grille by the unit. Split: never on a feature wall, never on the wall the bed faces (it would blow at the bed head); external walls first; indoor unit top **h2150** **(default)** centred on the longest free stretch; isolator **h2200** **(default)** beside it; outdoor unit outside the nearest external wall. |
+| R6.8 | Wet rooms: geyser **16A** point at **h2000** on the wall nearest the shower; exhaust in the external ventilator, or ceiling exhaust when the room has no external wall; IP44 socket at **h1100** beside the vanity; **mirror light** IP44 at **h1950** over each vanity. Washing machine: IP44 16A socket **h1100**, cold inlet h1050, drain h600 (R6.14) and a floor trap in front of it. Balcony: one IP44 socket h1100 on its longest free non-parapet wall. |
+| R6.9 | Main entry (services brief): DB at **h1800** on the hinge side, **400** from the jamb; VDP at **h1450** on the latch side beyond the switch; router at **h2100** beside the DB. The DB carries **RCCB 30 mA** protection on every wet-room circuit (baths, toilets, kitchen, utility, balcony) and on every socket circuit (`protection` on the DB item), printed under the power schedule. |
+| R6.10 | AC in living and bedrooms: **ducted** (`ac_ducted`) if the room has a feature wall **and** a tray ceiling; otherwise **split**. Ducted: unit above the ceiling by an external wall that is **not** the feature wall, outdoor unit outside it; **linear slot diffuser in the ceiling band opposite the feature wall** (20–80 % of that face, midway between wall and step); return grille by the unit. Split: never on a feature wall, never on the wall the bed faces (it would blow at the bed head); external walls first; indoor unit at **h2300** (centre) centred on the longest free stretch; AC socket / isolator **h2100** beside it (client standard §6); outdoor unit outside the nearest external wall. |
 | R6.11 | One **BLDC 1200** sweep fan per bedroom and living room: centred in the room (polygon centroid); in living rooms over the centre of the seating rug (the rug nearest a sofa or armchair). |
 | R6.12 | Downlights on a **1200** grid **(default pitch)** centred on the room, at least **500** from walls, **450** from joinery, **700** from the fan, **300** from ceiling step edges and domes, **500** from pendants, **400** from tracks. |
 | R6.13 | One cove light along each ceiling step with `light: cove`, in its trough **75** inside the step edge (C3.10), and a **ring cove at r + 90** round each dome with `light: cove`. Design fittings (`ceilings[].lights[]`: pendants, tracks, feature-wall pendants) are copied into `services.json` so they are switched. |
-| R6.14 | Plumbing **(default heights)**: basin and sink cold/hot **h550**, waste **h450**; WC cold **h150**, soil at floor; shower mixer **h1000**, head **h2100**, floor trap at its centre; washing machine cold **h1000**, waste **h600**; hot water runs from each geyser to its room's mixers. |
+| R6.14 | Plumbing **(default heights)**: basin and sink cold/hot **h550**, waste **h450**; WC cold **h150**, soil at floor; shower mixer **h1000**, head **h2100**, floor trap at its centre; washing machine cold inlet **h1050**, waste **h600**; hot water runs from each geyser to its room's mixers. |
 | R6.16 | `python -m atelier.services projects/<name> --check` reports the services review checklist (`agents/services.md`): a point behind a door swing, inside joinery, on a window, behind the TV, or on feature-wall artwork above the skirting zone (h300) outside the nightstand / TV-console zones (`SV-CLASH`, `SV-SWING`); plates closer than 120 (`SV-OVERLAP`); a way in from circulation or outside with no switchboard within reach (`SV-SWITCH`). Each finding suggests a `move` for `services_overrides.json`. |
 | R6.15 | `services_overrides.json` is applied last: `remove` (ids), `move` (id + new `at`/`z`), `add` (full items). An override naming an unknown id is an error. |

@@ -38,7 +38,7 @@ m = load(proj)
 names = A.page_names(m, proj)
 checks.append(("families expand in data order", [n for n in names if n.startswith("joinery:")] ==
                [f"joinery:{j['id']}" for j in m.joinery]))
-checks.append(("room boards follow the furniture plan", names.index("room:LD") == names.index("furniture") + 1))
+checks.append(("room boards follow the presentation plan (client §2)", names.index("room:LD") == names.index("presentation") + 1))
 
 # stub pages: blank A3 sheets carrying their number (and a switch to make one fail)
 FAIL = set()

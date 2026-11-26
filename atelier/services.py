@@ -418,7 +418,10 @@ class Builder:
             l_off = o["offset"] - 450 if hinge_end else o["offset"] + o["width"] + 450
             f, t = self.face_on_wall(rid, w["id"], geom.point_on_wall(w, h_off))
             if f is not None:
-                self.wall_device("power", "db", rid, f, t, 1800, "R6.9")
+                db = self.wall_device("power", "db", rid, f, t, 1800, "R6.9")
+                wet = [r["id"] for r in self.m.rooms if r.get("type") in WET | {"kitchen", "balcony", "utility"}]
+                if db is not None:                     # RCCB 30 mA on wet-room and socket circuits (R6.9)
+                    db["protection"] = {"rccb_ma": 30, "wet_rooms": wet, "socket_circuits": True}
                 self.wall_device("power", "router", rid, f, t - 450 if t > 600 else t + 450, 2100, "R6.9")
             f, t = self.face_on_wall(rid, w["id"], geom.point_on_wall(w, l_off))
             if f is not None:
@@ -491,8 +494,8 @@ class Builder:
                 continue
             f, a, b = best
             t = (a + b) / 2
-            unit = self.wall_device("ac", "split", rid, f, t, 2150, "R6.10", size=[900, 250])
-            self.wall_device("power", "ac_isolator", rid, f, t + 600 if t + 600 < f.length - 60 else t - 600, 2200,
+            unit = self.wall_device("ac", "split", rid, f, t, 2300, "R6.10", size=[900, 250])
+            self.wall_device("power", "ac_isolator", rid, f, t + 600 if t + 600 < f.length - 60 else t - 600, 2100,
                              "R6.10")
             ef = min(ext, key=lambda e: LineString([e.a, e.b]).distance(Point(unit["at"])))
             # run along the unit's own face to its end nearest the external face, then along that face
@@ -653,7 +656,7 @@ class Builder:
                 self.wall_device("plumbing", "hot", s["room"], f, t + 100, 1000, "R6.14", note="mixer")
                 self.add("plumbing", "floor_trap", s["room"], s["at"], 0, "R6.14")
             elif s["kind"] == "washing_machine":
-                self.wall_device("plumbing", "cold", s["room"], f, t - 150, 1000, "R6.14")
+                self.wall_device("plumbing", "cold", s["room"], f, t - 150, 1050, "R6.14", note="WM inlet")
                 self.wall_device("plumbing", "waste", s["room"], f, t + 50, 600, "R6.14")
         for g in [i for i in self.items if i["kind"] == "geyser"]:
             for h in [i for i in self.items if i["kind"] == "hot" and i["room"] == g["room"]]:

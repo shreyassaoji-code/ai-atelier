@@ -84,11 +84,14 @@ def axo_camera(m, room):
     us = [p[0] * right[0] + p[1] * right[1] for p in pts]
     vs = [p[0] * up[0] + p[1] * up[1] + p[2] * up[2] for p in pts]
     scale = max(max(us) - min(us), max(vs) - min(vs)) * 1.04
-    tz = W3["cut"] / 3
+    # aim at the middle of the projected box, not the centroid, so the room sits centred in the frame
+    du = (max(us) + min(us)) / 2 - (c.x * right[0] + c.y * right[1])
+    dv = (max(vs) + min(vs)) / 2 - (c.x * up[0] + c.y * up[1])
+    tx, ty, tz = c.x + right[0] * du + up[0] * dv, c.y + right[1] * du + up[1] * dv, up[2] * dv
     dist = 30000
     return {"id": f"AX-{room['id']}", "room": room["id"], "kind": "axo", "ortho": round(scale),
-            "eye": [round(c.x + d[0] * dist), round(c.y + d[1] * dist), round(tz + d[2] * dist)],
-            "target": [round(c.x), round(c.y), round(tz)], "cut": W3["cut"], "auto": True}
+            "eye": [round(tx + d[0] * dist), round(ty + d[1] * dist), round(tz + d[2] * dist)],
+            "target": [round(tx), round(ty), round(tz)], "cut": W3["cut"], "auto": True}
 
 
 def _fov_clearance(poly, tall, x, y, yaw, lens):

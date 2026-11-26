@@ -4,9 +4,9 @@ Kept apart from the sheet modules so none of them has to import the others.
 """
 from collections import OrderedDict
 
-from atelier import details, sheets, sheets_ceiling, sheets_services
+from atelier import details, sheets, sheets_ceiling, sheets_extra, sheets_services
 
 SHEET_DEFS = OrderedDict(sheets.SHEET_DEFS)
-for mod in (sheets_services, sheets_ceiling, details):
+for mod in (sheets_services, sheets_ceiling, details, sheets_extra):
     SHEET_DEFS.update(mod.SHEET_DEFS)
 SHEETS = OrderedDict((k, v[0]) for k, v in SHEET_DEFS.items())
