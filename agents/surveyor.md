@@ -10,7 +10,7 @@ appear on the sheets (§1) and which walls get elevations (§5, E5.1). `CLAUDE.m
 | | |
 |---|---|
 | **Input** | one floor-plan image, `projects/<name>/plan.png`, and nothing else |
-| **Output** | `projects/<name>/survey.json` — the only file you write |
+| **Output** | `projects/<name>/survey.json` — the only file you write — and a 5-line reply (see Output) |
 | **Done when** | `python -m atelier.validate projects/<name>` shows 0 errors and `out/overlay.png` lines up with the image |
 
 ## You never
@@ -49,9 +49,17 @@ A chain of printed dimensions must add up to its printed overall; when it does n
 2. `python -m atelier.overlay projects/<name>` → open `out/overlay.png` and **look at it**. Every red wall must sit on the drawn wall; any wall off by more than its own thickness, or any missing / extra wall, is a fix to the data.
 3. Computed vs printed area: the validator raises `E-AREA` above 3 %. Fix the polygon, not `area_printed`.
 
-## Hand-off (your reply, after the file is clean)
+## Output
 
-- Envelope size (x × y mm), calibration used and its source.
-- Rooms: id, name, computed area, printed area.
-- Every flagged value grouped by kind (scaled / assumed / unreadable) and every `flags[]` query.
-- What you could not read. No claims about anything you did not trace.
+Output: survey.json + 5 lines: scale source, size, rooms,
+flagged items.
+
+Exactly these five lines, nothing else (fifth: what could not be read, or "none"):
+
+```
+Scale: printed overall 11400 between a_px [112, 940] and b_px [1508, 940]
+Size: 11400 × 7800 mm (envelope, outer faces)
+Rooms: LD 37.5 (printed 37.0) · KIT 7.6 · MBR 10.5 (printed 10.4) · …   (m² computed, printed where given)
+Flagged: 31: ceiling 2750, soffit, lintel, sill assumed · 14 sills/heads assumed · 3 lengths scaled · Q1 shaft, Q2 columns
+Not read: none
+```
