@@ -11,7 +11,7 @@ appear on the sheets (§1) and which walls get elevations (§5, E5.1). `CLAUDE.m
 |---|---|
 | **Input** | one floor-plan image, `projects/<name>/plan.png`, and nothing else |
 | **Output** | `projects/<name>/survey.json` — the only file you write — and a 5-line reply (see Output) |
-| **Done when** | `python -m atelier.validate projects/<name>` shows 0 errors and `out/overlay.png` lines up with the image |
+| **Done when** | both checks pass (see Check loop) |
 
 ## You never
 
@@ -43,11 +43,14 @@ appear on the sheets (§1) and which walls get elevations (§5, E5.1). `CLAUDE.m
 
 A chain of printed dimensions must add up to its printed overall; when it does not, keep the printed overall, scale the gap, and raise a query.
 
-## Check loop (repeat until clean)
+## Check loop
 
-1. `python -m atelier.validate projects/<name>`: fix every `E-` error in the data. `W-` warnings may stay only if the plan shows them (e.g. a bath with no window); say why in the hand-off.
-2. `python -m atelier.overlay projects/<name>` → open `out/overlay.png` and **look at it**. Every red wall must sit on the drawn wall; any wall off by more than its own thickness, or any missing / extra wall, is a fix to the data.
-3. Computed vs printed area: the validator raises `E-AREA` above 3 %. Fix the polygon, not `area_printed`.
+python -m atelier.validate projects/<name>: 0 errors. Iterate until both pass.
+
+The two checks; after any change to survey.json, run both again.
+
+1. **Validate.** `python -m atelier.validate projects/<name>` must report 0 errors. Fix each `E-` error in the data, never by loosening a value you read. `E-AREA` (computed vs printed area > 3 %) is fixed in the room polygon, not in `area_printed`. A `W-` warning may stay only if the plan shows it (e.g. a bath with no window): give the reason in that object's `note`.
+2. **Overlay.** `python -m atelier.overlay projects/<name>` → open `out/overlay.png` and **look at it**. Every red wall must sit on the drawn wall; a wall off by more than its own thickness, or a missing or extra wall, is a fix to the data.
 
 ## Output
 
