@@ -231,3 +231,23 @@ def room_cameras(m, room, n=3):
                     "corner": octant((v[0] - (bb[0] + bb[2]) / 2) / (bb[2] - bb[0]), (v[1] - (bb[1] + bb[3]) / 2) / (bb[3] - bb[1])),
                     "looking": octant(math.cos(yaw), math.sin(yaw))})
     return out
+
+
+def feature_camera(m, g):
+    """A level camera facing a feature wall square-on from across the room (Feature wall sheet)."""
+    from atelier import features as FT
+    L, P = FT.wall_u(m, g)
+    poly = geom.room_polygon(m.room(g["room"]))
+    a, b = P(0), P(L)
+    vx, vy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
+    nx, ny = vy, -vx                                         # into the room
+    u0 = min(it["from"] for it in g["items"])
+    u1 = max(it["to"] for it in g["items"])
+    mid = P((u0 + u1) / 2)                                   # centre on the feature, not the whole wall
+    depth = LineString([mid, (mid[0] + nx * 20000, mid[1] + ny * 20000)]).intersection(poly).length
+    d = max(1200, min(depth - 350, 4200))
+    lens = 20 if (u1 - u0) > 1.35 * d else 24
+    eye = (mid[0] + nx * d, mid[1] + ny * d)
+    return {"id": f"V-{g['id']}", "room": g["room"], "eye": [round(eye[0]), round(eye[1]), CAM["eye_z"]],
+            "target": [round(mid[0]), round(mid[1]), CAM["eye_z"]], "lens": lens, "auto": True,
+            "feature": g["id"], "looking": octant(-nx, -ny)}

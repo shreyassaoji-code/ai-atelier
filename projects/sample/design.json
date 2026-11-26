@@ -256,7 +256,7 @@
       "id": "F17",
       "room": "MBR",
       "kind": "bedside",
-      "lamp": true,
+      "lamp": false,
       "at": [430, 4950],
       "size": [450, 400, 500],
       "facing": "E",
@@ -266,7 +266,7 @@
       "id": "F18",
       "room": "MBR",
       "kind": "bedside",
-      "lamp": true,
+      "lamp": false,
       "at": [430, 7050],
       "size": [450, 400, 500],
       "facing": "E",
@@ -304,7 +304,7 @@
       "id": "F22",
       "room": "BR2",
       "kind": "bedside",
-      "lamp": true,
+      "lamp": false,
       "at": [6060, 7250],
       "size": [450, 400, 500],
       "facing": "E",
@@ -708,11 +708,8 @@
       "z": 2550,
       "steps": []
     },
-    {
-      "room": "BR2",
-      "z": 2600,
-      "steps": []
-    },
+    {"room": "BR2", "type": "tray", "steps": [{"band": 450, "z": 2550}], "core_h": 2700,
+     "tracks": [[[6700, 5000], [8200, 5000]], [[6700, 6900], [8200, 6900]]]},
     {
       "room": "KIT",
       "z": 2550,
@@ -740,39 +737,9 @@
     }
   ],
   "wall_features": [
-    {
-      "id": "FW1",
-      "room": "LD",
-      "wall": "I1a",
-      "offset": 0,
-      "width": 2470,
-      "z0": 0,
-      "z1": 2850,
-      "kind": "fluted",
-      "finish": "WF3"
-    },
-    {
-      "id": "FW2",
-      "room": "MBR",
-      "wall": "X4",
-      "offset": 750,
-      "width": 2100,
-      "z0": 0,
-      "z1": 1200,
-      "kind": "headboard",
-      "finish": "WF4"
-    },
-    {
-      "id": "FW3",
-      "room": "BR2",
-      "wall": "I3",
-      "offset": 985,
-      "width": 2200,
-      "z0": 0,
-      "z1": 2850,
-      "kind": "paint",
-      "finish": "WF6"
-    },
+    {"id": "FW1", "room": "LD", "wall": "I1a", "note": "Living ref: arched back-lit TV wall, fluted panels, lit niches; mirrored about the TV (J1). Clear of D2.", "items": [{"from": 0, "to": 220, "type": "fluted", "code": "WF3", "color": "warm oak"}, {"from": 220, "to": 500, "type": "niche", "code": "WF13", "color": "smoked walnut"}, {"from": 500, "to": 620, "type": "fluted", "code": "WF3", "color": "warm oak"}, {"from": 620, "to": 1820, "type": "arch", "code": "WF12", "color": "warm sand", "backlit": true}, {"from": 1820, "to": 1940, "type": "fluted", "code": "WF3", "color": "warm oak"}, {"from": 1940, "to": 2220, "type": "niche", "code": "WF13", "color": "smoked walnut"}, {"from": 2220, "to": 2440, "type": "fluted", "code": "WF3", "color": "warm oak"}]},
+    {"id": "FW2", "room": "MBR", "wall": "X4", "note": "Bedroom ref: back-lit tree mural, upholstered panels, fluted strip, oak slats, glass pendants.", "items": [{"from": 0, "to": 985, "type": "mural", "code": "WF7", "color": "sage", "backlit": true}, {"from": 985, "to": 2785, "type": "upholstered", "code": "WF4", "color": "warm linen", "panels": 4, "z1": 1350}, {"from": 2785, "to": 3235, "type": "fluted", "code": "WF3", "color": "warm oak"}, {"from": 3235, "to": 3455, "type": "slats", "code": "WF8", "color": "honey oak"}], "led": [985, 2785, 3235], "pendants": [{"u": 835, "z": 1300, "d": 220, "length": 1250, "out": 200}, {"u": 2935, "z": 1300, "d": 220, "length": 1250, "out": 200}]},
+    {"id": "FW3", "room": "BR2", "wall": "I3", "note": "Bedroom ref: floral line-art panels to the ceiling, low rounded olive panel behind the left nightstand, smoked mirror strip, cluster pendants. Starts clear of wardrobe J6 (0-600 hidden by it).", "items": [{"from": 600, "to": 1185, "type": "upholstered", "code": "WF11", "color": "deep olive", "z1": 1100, "rounded": true, "panels": 1}, {"from": 1185, "to": 2985, "type": "lineart", "code": "WF10", "color": "cream", "panels": 4}, {"from": 2985, "to": 3455, "type": "mirror", "code": "WF9", "color": "charcoal"}], "pendants": [{"u": 3060, "z": 1250, "d": 160, "length": 1300, "out": 200}, {"u": 3135, "z": 1450, "d": 160, "length": 1100, "out": 200}, {"u": 3210, "z": 1650, "d": 160, "length": 900, "out": 200}]},
     {
       "id": "FW4",
       "room": "KIT",
@@ -864,6 +831,13 @@
     }
   ],
   "finishes": [
+    {"code": "WF7", "kind": "fabric", "name": "Back-lit tree mural, printed fabric on frame", "maker": null, "ref": null},
+    {"code": "WF8", "kind": "wood", "name": "Oak slats 40 x 20 at 90", "maker": null, "ref": null},
+    {"code": "WF9", "kind": "mirror", "name": "Smoked mirror, bronze tint", "maker": null, "ref": null},
+    {"code": "WF10", "kind": "fabric", "name": "Floral line-art fabric panels", "maker": null, "ref": null},
+    {"code": "WF11", "kind": "fabric", "name": "Olive velvet, upholstered", "maker": null, "ref": null},
+    {"code": "WF12", "kind": "stone", "name": "Travertine slab, honed, arched LED", "maker": null, "ref": null},
+    {"code": "WF13", "kind": "wood", "name": "Walnut-lined niche, LED strip", "maker": null, "ref": null},
     {
       "code": "FL-1",
       "kind": "stone",

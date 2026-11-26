@@ -14,6 +14,7 @@ import sys
 from itertools import combinations
 from pathlib import Path
 
+from shapely.geometry import LineString
 from shapely.ops import unary_union
 
 from atelier import geom
@@ -113,6 +114,55 @@ def check(m: Model) -> Report:
             R.E("E-DEMOLISH-STRUCT", f"wall {d['id']} is {kinds[d['id']]}: it may not be demolished")
     for e in m.override_errors:
         R.E("E-REF", e)
+    # ---- feature walls (agents/reference.md, STANDARDS §4) ------------------------
+    from atelier import features as FT
+    for g in m.feature_walls:
+        its = sorted(g["items"], key=lambda i: i["from"])
+        for it in its:
+            if it.get("type") not in FT.TYPES:
+                R.E("E-ENUM", f"wall feature {g['id']}: type {it.get('type')!r} not in {list(FT.TYPES)}")
+            if not 0 <= it["from"] < it["to"] <= g["L"] + 1:
+                R.E("E-FEATURE", f"wall feature {g['id']}: item {it.get('type')} {it['from']}-{it['to']} "
+                                 f"runs off the {g['L']} wall")
+        for a, b in zip(its, its[1:]):
+            if b["from"] < a["to"] - 1 and b["z0"] < a["z1"] and a["z0"] < b["z1"]:
+                R.E("E-FEATURE", f"wall feature {g['id']}: {a.get('type')} and {b.get('type')} overlap "
+                                 f"({a['from']}-{a['to']} / {b['from']}-{b['to']})")
+    for g, it, o in (FT.opening_clashes(m) if not R.errors else []):
+        what = "a window" if o["kind"] not in ("door", "double_door") else "a door (set concealed: true to hide it)"
+        R.E("E-FEATURE-OPENING", f"wall feature {g['id']}: {it.get('type')} {it['from']}-{it['to']} covers "
+                                 f"{o['id']}, {what}")
+    for g in (m.feature_walls if not R.errors else []):         # elements hidden behind tall joinery
+        L, P = FT.wall_u(m, g)
+        line = LineString([P(0), P(L)])
+        for j in m.joinery:
+            if j["room"] != g["room"] or j.get("z", 0) + j.get("height", 850) < 1200:
+                continue
+            jp = geom.joinery_polygon(j, m.wall(j["wall"]), m.room(j["room"]))
+            if jp.distance(line) > 60:
+                continue
+            us = [FT._u_of(P, L, c) for c in jp.exterior.coords]
+            ja, jb = min(us), max(us)
+            for it in g["items"]:
+                ov = min(jb, it["to"]) - max(ja, it["from"])
+                if ov > 0.5 * (it["to"] - it["from"]):
+                    R.W("W-FEATURE-HIDDEN", f"wall feature {g['id']}: {it.get('type')} {it['from']}-{it['to']} "
+                                            f"is behind {j['id']} ({ja:.0f}-{jb:.0f})")
+    for g in (m.feature_walls if not R.errors else []):         # bed / TV centred on its element
+        L, P = FT.wall_u(m, g)
+        line = LineString([P(0), P(L)])
+        anchors = [f for f in m.furniture if f["room"] == g["room"] and f.get("kind") == "bed"
+                   and geom.furniture_polygon(f).distance(line) < 400]
+        anchors += [j for j in m.joinery if j["room"] == g["room"] and j.get("kind") == "tv_unit"
+                    and j["wall"] == g.get("wall")]
+        for a in anchors:
+            c = geom.furniture_polygon(a).centroid if "at" in a else \
+                geom.joinery_polygon(a, m.wall(a["wall"]), m.room(a["room"])).centroid
+            u = FT._u_of(P, L, (c.x, c.y))
+            host = next((it for it in g["items"] if it["from"] <= u <= it["to"]), None)
+            if host and abs((host["from"] + host["to"]) / 2 - u) > 50:
+                R.W("W-FEATURE-CENTRE", f"wall feature {g['id']}: {a['id']} centre at u={u:.0f}, its "
+                                        f"{host.get('type')} element centre at {(host['from'] + host['to']) / 2:.0f}")
     if R.errors:
         return R  # geometry checks need valid references
 

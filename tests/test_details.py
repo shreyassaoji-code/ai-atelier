@@ -15,7 +15,7 @@ m = load(ROOT / "projects" / "sample")
 fw, wall = DT._src_panel(m)
 o, ow = DT._src_door(m)
 checks = [
-    ("detail 2 takes the fluted panel FW1", fw and fw["id"] == "FW1"),
+    ("detail 2 takes the fluted panel of FW1", fw and (fw["id"] == "FW1" or fw.get("parent") == "FW1")),
     ("detail 3 takes the tallest skirting (100)", DT._src_skirting(m)["skirting"] == 100),
     ("detail 4 takes an internal door", o and ow.get("kind") != "external"),
     ("detail 5 takes the kitchen base run J3", DT._src_join(m, ("kitchen_base",))["id"] == "J3"),

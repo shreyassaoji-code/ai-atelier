@@ -86,6 +86,27 @@ Designers may write a design in the brief's words; `atelier/vocab.py` turns it i
 
 **Colours are names, never values** (`CLAUDE.md`): "warm oak", "deep olive", "bone", "smoked bronze". `texture.named_tone` mixes them from `theme.py` tokens (base words: white/ivory/bone, cream/linen, beige/sand/stone, marble, grey/ash, charcoal/black, oak/honey, walnut/smoked, brass/bronze/gold, terracotta/rust, sage/olive/green, blue/navy/slate, blush/rose; modifiers light/pale, dark/deep, warm, cool, muted). A name with no known word draws in its kind's tone and raises `W-TONE`.
 
+## 2c. Feature walls in the interpreter's form (agents/reference.md, STANDARDS §4)
+
+```json
+{"id": "FW2", "room": "MBR", "wall": "X4",
+ "items": [{"from": 0, "to": 985, "type": "mural", "code": "WF7", "color": "sage", "backlit": true},
+           {"from": 985, "to": 2785, "type": "upholstered", "code": "WF4", "color": "warm linen", "panels": 4, "z1": 1350}],
+ "led": [985, 2785],
+ "pendants": [{"u": 835, "z": 1300, "d": 220, "length": 1250, "out": 200}],
+ "ref": "refs/mbr-mood.jpg", "note": "…"}
+```
+
+| Field | Meaning |
+|---|---|
+| `wall` or `edge` | host: a wall id (its longest face in the room), or a **room edge index**: edges are numbered 1, 2, … counter-clockwise, edge 1 starting at the room polygon's south-west-most vertex (`geom.room_edges`); an edge may span several walls |
+| `items[]` | `from`, `to`: mm from the **left corner as seen from inside the room**; `type` (STANDARDS FW4.2); `code` (finish); `color` (a colour name, §2b); optional `depth`, `z0` (0), `z1` (the room's ceiling level), `backlit`, `panels`, `rounded`, `concealed` (doors inside become flush concealed doors), `note` |
+| `led[]` | `u` (or `{u, z0, z1}`): vertical LED reveals |
+| `pendants[]` | `u`, `out` (mm into the room, default 300), `z` (bottom), `d` (diameter), `length` (drop) |
+| `ref` | the client's reference image, in the project or `refs/` |
+
+On load (`atelier/features.py`) each item becomes an engine wall feature (§2 `wall_features`: wall, offset, width, z0, z1, kind = type, finish = code, plus tone, depth, backlit, panels, rounded, concealed, parent); pendants become the room's ceiling fittings.
+
 ## 3. Enums (complete lists)
 
 | Field | Values |
@@ -102,7 +123,7 @@ Designers may write a design in the brief's words; `atelier/vocab.py` turns it i
 | `module.type` | `shutter` `glass_shutter` `drawer` `open` `loft` `appliance` `sink` `hob` `panel` `filler` |
 | `step.light` | `none` `cove` `profile` |
 | `light.kind` | `downlight` `spotlight` `pendant` `chandelier` `strip` `track` `fan` (`track` = magnetic track, with `path`) |
-| `wall_feature.kind` | `panelling` `fluted` `cladding` `wallpaper` `paint` `tile` `stone` `mirror` `niche` `headboard` |
+| `wall_feature.kind` | `mural` `upholstered` `fluted` `slats` `mirror` `lineart` `arch` `niche` `paint` `stone` `panelling` `cladding` `wallpaper` `tile` `headboard` |
 | `floor.pattern` | `straight` `brick` `diagonal` `herringbone` `chevron` `plank` |
 | `floor.start` | `centre` `door` `corner` |
 | `finish.kind` | `tile` `stone` `wood` `laminate` `veneer` `paint` `wallpaper` `fabric` `metal` `glass` `mirror` `gypsum` |

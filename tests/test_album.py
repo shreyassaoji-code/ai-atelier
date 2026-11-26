@@ -25,7 +25,7 @@ checks = []
 # 1 the code order is the STANDARDS §2 table
 md = (ROOT / "agents" / "STANDARDS.md").read_text()
 sec = md.split("## 2. Album structure", 1)[1].split("## 2a.", 1)[0]
-table = [k for _, k in sorted((int(n), k) for n, k in re.findall(r"^\| (\d+) \| `([^`]+)` \|", sec, re.M))]
+table = [k for _, _, k in sorted((int(n), a, k) for n, a, k in re.findall(r"^\| (\d+)([a-z]?) \| `([^`]+)` \|", sec, re.M))]
 checks.append(("album.ORDER matches STANDARDS §2", table == A.ORDER))
 
 tmp = Path(tempfile.mkdtemp())

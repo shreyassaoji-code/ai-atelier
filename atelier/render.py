@@ -84,6 +84,22 @@ class Mesh:
         pts = [(ox + ux * u + vx * v, oy + uy * u + vy * v) for u, v in ((u0, v0), (u1, v0), (u1, v1), (u0, v1))]
         self.prism(key, Polygon(pts), z0, z1)
 
+    def uz_prism(self, key, F, g, d0, d1):
+        """A shape drawn in a wall's plane (u along the frame, z up), d0..d1 out from the wall."""
+        (ox, oy), (ux, uy), (vx, vy) = F
+        W = lambda u, z, d: (ox + ux * u + vx * d, oy + uy * u + vy * d, z)  # noqa: E731
+        for p in getattr(g, "geoms", [g]):
+            if p.geom_type != "Polygon" or p.area < 1:
+                continue
+            for t in constrained_delaunay_triangles(p).geoms:
+                c = list(t.exterior.coords)[:3]
+                self.poly(key, [W(u, z, d1) for u, z in c])
+                self.poly(key, [W(u, z, d0) for u, z in reversed(c)])
+            for ring in [p.exterior, *p.interiors]:
+                c = list(ring.coords)
+                for (u0, z0), (u1, z1) in zip(c, c[1:]):
+                    self.poly(key, [W(u0, z0, d0), W(u1, z1, d0), W(u1, z1, d1), W(u0, z0, d1)])
+
     def disc(self, key, c, r, z0, z1, seg=28):
         self.prism(key, Point(c).buffer(r, quad_segs=max(4, seg // 4)), z0, z1)
 
@@ -408,6 +424,10 @@ class Scene:
             w = m.wall(wf["wall"])
             pa, pb = geom.point_on_wall(w, wf["offset"]), geom.point_on_wall(w, wf["offset"] + wf["width"])
             key = self.finish_mat(wf.get("finish"))
+            if wf.get("tone") and TX.named_tone(wf["tone"]) is not None:
+                base = self.mats[key]
+                key = self.mat(f"{key}~{wf['tone']}", **{**{k_: v for k_, v in base.items() if k_ != "image"},
+                                                         "color": TX.named_tone(wf["tone"])})
             for f in faces:
                 cuts, u = self._face_cuts(f, r)
                 ux, uy = u
@@ -417,22 +437,71 @@ class Scene:
                 if tb - ta < 20:
                     continue
                 z0, z1 = wf["z0"], wf["z1"]
-                k = wf.get("kind")
-                if k == "fluted":
-                    self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 14)
-                    t = ta + 10
-                    while t + 24 < tb:
-                        self._strip(key, f, cuts, u, t, t + 24, z0, z1, 14, 26)
-                        t += 32
-                elif k == "headboard":
-                    z = z0
-                    while z < z1 - 1:
-                        self._strip(key, f, cuts, u, ta, tb, z + 4, min(z + 196, z1), 2, 62)
-                        z += 200
-                elif k in ("tile", "stone", "cladding"):
-                    self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 10)
+                self._feature(wf, f, cuts, u, ta, tb, z0, z1, key)
+
+    def _feature(self, wf, f, cuts, u, ta, tb, z0, z1, key):
+        """One feature element in 3D (types: atelier/features.py, STANDARDS §4)."""
+        from shapely.geometry import box as sbox
+        k = wf.get("kind")
+        dp = wf.get("depth") or 20
+        ux, uy = u
+        F = (f.a, (ux, uy), (-uy, ux))
+        led = self.mat("led", emit=TX.mix(T.AMBER, T.PAPER, 0.72), strength=R["cove_strength"])
+        dark = self.mat("niche_back", color=TX.mix(T.INK, T.GREY, 0.3), rough=0.8)
+        if k == "fluted":
+            self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 14)
+            t = ta + 10
+            while t + 24 < tb:
+                self._strip(key, f, cuts, u, t, t + 24, z0, z1, 14, 26)
+                t += 32
+        elif k == "slats":
+            self._strip(dark, f, cuts, u, ta, tb, z0, z1, 2, 6)
+            t = ta + 25
+            while t + 40 <= tb:
+                self._strip(key, f, cuts, u, t, t + 40, z0, z1, 6, 6 + dp)
+                t += 90
+        elif k in ("upholstered", "headboard"):
+            n = wf.get("panels") or max(1, round((tb - ta) / 450))
+            pw = (tb - ta) / n
+            for i in range(n):
+                a_, b_ = ta + i * pw + 3, ta + (i + 1) * pw - 3
+                if wf.get("rounded"):
+                    r = min((b_ - a_) / 2, 250)
+                    g = sbox(a_, z0, b_, z1 - r).union(sbox(a_ + r, z1 - r, b_ - r, z1)) \
+                        .union(Point(a_ + r, z1 - r).buffer(r, quad_segs=8)).union(Point(b_ - r, z1 - r).buffer(r, quad_segs=8))
+                    self.mesh.uz_prism(key, F, g.intersection(sbox(a_, z0, b_, z1)), 2, 2 + dp)
                 else:
-                    self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 4)
+                    self._strip(key, f, cuts, u, a_, b_, z0 + 3, z1 - 3, 2, 2 + dp)
+        elif k == "arch":
+            self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 2 + dp)
+            m_ = min((tb - ta) * 0.14, 160)
+            r = (tb - ta - 2 * m_) / 2
+            top = z1 - m_
+            hole = sbox(ta + m_, z0 + 400, tb - m_, top - r).union(Point((ta + tb) / 2, top - r).buffer(r, quad_segs=16)
+                                                                     .intersection(sbox(ta, top - r, tb, top)))
+            back = self.mat(f"{key}-in", color=np.clip(np.array(self.mats[key].get("color", (0.8, 0.8, 0.8))) * 1.08, 0, 1),
+                            rough=0.6)
+            self.mesh.uz_prism(back, F, hole, 2 + dp, 2 + dp + 2)
+            self.mesh.uz_prism(led, F, hole.exterior.buffer(12).intersection(hole.buffer(14)).difference(hole.buffer(-6))
+                               .intersection(sbox(ta, z0 + 420, tb, z1)), 2 + dp, 2 + dp + 4)
+        elif k == "niche":
+            self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 22)
+            zz = z0 + 420
+            while zz + 450 < z1 - 100:
+                self._strip(dark, f, cuts, u, ta + 50, tb - 50, zz, zz + 450, 22, 24)
+                self._strip(led, f, cuts, u, ta + 60, tb - 60, zz + 436, zz + 446, 22, 30)
+                zz += 700
+        elif k == "mirror":
+            mir = self.mat(f"mirror-{key}", color=TX.mix(T.INK, T.GREY, 0.35), rough=0.04, metal=1.0)
+            self._strip(mir, f, cuts, u, ta, tb, z0, z1, 2, 2 + dp)
+        elif k in ("tile", "stone", "cladding", "mural", "lineart", "panelling", "wallpaper"):
+            self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 2 + dp)
+        else:
+            self._strip(key, f, cuts, u, ta, tb, z0, z1, 2, 4)
+        if wf.get("backlit") and k != "arch":                  # glow at the element's edges
+            for a_, b_, za, zb in ((ta, tb, z0 + 5, z0 + 25), (ta, tb, z1 - 25, z1 - 5), (ta, ta + 20, z0, z1),
+                                   (tb - 20, tb, z0, z1)):
+                self._strip(led, f, cuts, u, a_, b_, za, zb, 2 + dp, 2 + dp + 3)
 
     def joinery(self, j):
         m = self.m
@@ -649,16 +718,19 @@ class Scene:
                 self.mesh.disc(bulb, it["at"], 32, zc - 5, zc - 4, seg=20)
                 self.lights.append(dict(kind="spot", at=(*it["at"], zc - 8), power=R["downlight_w"]))
             elif it["kind"] == "pendant":
-                self._pendant(it["at"], zc, warm)
+                self._pendant(it["at"], zc, warm, it.get("z"), it.get("d"))
             elif it["kind"] == "track" and it.get("path"):
                 self._track(it["path"], zc)
 
-    def _pendant(self, at, zc, warm):
+    def _pendant(self, at, zc, warm, z=None, d=None):
         metal = self.mat("metal", color=self.pal["metal"], rough=0.3, metal=0.9)
         glow = self.mat("globe", color=TX.mix(T.PAPER, T.AMBER, 0.15), emit=warm, strength=4.0)
-        self.mesh.disc(metal, at, 4, zc - 900, zc, seg=8)
-        self.mesh.ellipsoid(glow, (at[0], at[1], zc - 1000), 160, 160, 130, seg=24, ring=10)
-        self.lights.append(dict(kind="point", at=(at[0], at[1], zc - 1000), power=R["pendant_w"], r=0.12))
+        r = (d or 320) / 2
+        zb = z if z is not None else zc - 1000 - 130
+        zm = zb + r * 0.8                                        # globe centre
+        self.mesh.disc(metal, at, 4, zm + r * 0.8, zc, seg=8)
+        self.mesh.ellipsoid(glow, (at[0], at[1], zm), r, r, r * 0.8, seg=24, ring=10)
+        self.lights.append(dict(kind="point", at=(at[0], at[1], zm), power=R["pendant_w"] * (r / 160) ** 2, r=r / 1000))
 
     def _track(self, path, zc):
         dark = self.mat("track", color=TX.mix(T.INK, T.GREY, 0.2), rough=0.4)
@@ -883,7 +955,8 @@ def scene_hash(root: Path):
 
 
 def all_cameras(m):
-    return [c for r in V3.board_rooms(m) for c in V3.room_cameras(m, r)]
+    return [c for r in V3.board_rooms(m) for c in V3.room_cameras(m, r)] + \
+        [V3.feature_camera(m, g) for g in getattr(m, "feature_walls", [])]
 
 
 def manifest(root: Path):

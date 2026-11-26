@@ -133,9 +133,9 @@ def _plan_size(m, room, s):
         E_TITLE + (CH[0] + TXT) + (b[3] - b[1]) / s + (CH[1] + TXT)
 
 
-def _elev_size(F):
-    w = CALLOUT_W + (F.t_left + F.L + F.t_right) / ES + MARK_W
-    h = E_TITLE + (F.soffit + ED["slab"] + E_FLOOR) / ES + E_CHAIN + TXT
+def _elev_size(F, s=ES):
+    w = CALLOUT_W + (F.t_left + F.L + F.t_right) / s + MARK_W
+    h = E_TITLE + (F.soffit + ED["slab"] + E_FLOOR) / s + E_CHAIN + TXT
     return w, h
 
 
@@ -350,17 +350,16 @@ def _furniture_elev(C, f, xa, xb, frontal):
         R(xa, xb, 0, h, oak)
 
 
-def draw_elevation(sh, m, view, k, x0, y0):
+def draw_elevation(sh, m, view, k, x0, y0, s=ES):
     """Key elevation k at 1:50 with its top-left at (x0, y0). Returns (width, height) used."""
     F = Face(m, view)
     room = F.room
-    s = ES
     L, soff = F.L, F.soffit
     fin = {f["code"]: f for f in m.finishes}
     pal = TX.palette()
     ex0 = x0 + CALLOUT_W + F.t_left / s
     ey0 = y0 + E_TITLE + (soff + ED["slab"]) / s
-    C = Cv(sh, F, ex0, ey0)
+    C = Cv(sh, F, ex0, ey0, s)
     cdef = next((c for c in m.ceilings if c["room"] == room["id"]), None)
     fcl = F.fcl
     top = fcl or soff
@@ -409,42 +408,22 @@ def draw_elevation(sh, m, view, k, x0, y0):
             calls.append(("DOME", f"Dome Ø{dm['d']}", (cx_ - r * 0.5, zs + (dm["z"] - zs) * 0.85)))
         del poly
     levels.append((soff, "Soffit", F.sflag))
-    # features
+    # features (STANDARDS §4): shared drawing routine; call-outs per element
+    from atelier import features as FT
     for wf in F.features():
         wf = dict(wf, z1=min(wf["z1"], top))                   # seen up to the false ceiling, not into the void
         f_ = fin.get(wf.get("finish"), {})
-        kind = wf.get("kind")
-        tone = TX.hexc(TX.finish_tone(f_))
-        C.rect(wf["xa"], wf["xb"], wf["z0"], wf["z1"], fill=tone, edge=T.INK, lw=LW_HAIR, z=3)
-        if kind == "fluted":
-            x = wf["xa"] + 30
-            pl = []
-            while x < wf["xb"]:
-                pl.append([(C.X(x), C.Z(wf["z0"])), (C.X(x), C.Z(wf["z1"]))])
-                x += 60
-            sh.lines(pl, TX.hexc(TX.mix(TX.finish_tone(f_), T.INK, 0.3)), LW_HAIR, z=3)
-        elif kind == "headboard":
-            z = wf["z0"] + 200
-            while z < wf["z1"]:
-                C.line([(wf["xa"], z), (wf["xb"], z)], T.INK, LW_HAIR, z=3)
-                z += 200
-        elif kind in ("tile", "stone", "cladding"):
-            ts = _tile_size(f_.get("name"))
-            if ts:
-                tw, th = ts
-                z, row, pl = wf["z0"], 0, []
-                while z < wf["z1"] - 1:
-                    pl.append([(C.X(wf["xa"]), C.Z(z)), (C.X(wf["xb"]), C.Z(z))])
-                    x = wf["xa"] + (tw / 2 if row % 2 else 0)
-                    while x < wf["xb"]:
-                        pl.append([(C.X(x), C.Z(z)), (C.X(x), C.Z(min(z + th, wf["z1"])))])
-                        x += tw
-                    z += th
-                    row += 1
-                sh.lines(pl, T.HAIR, LW_HAIR, z=3)
-        calls.append((f"{wf['id']} · {wf['finish']}", f_.get("name", ""),
+        FT.draw(C, m, wf, wf["xa"], wf["xb"], wf["z0"], wf["z1"])
+        calls.append((f"{wf['id']} · {wf['finish']}", f_.get("name", wf.get("kind", "")),
                       (wf["xa"] + 0.14 * (wf["xb"] - wf["xa"]), wf["z0"] + 0.62 * (wf["z1"] - wf["z0"]))))
         levels.append((wf["z1"], wf["id"], False)) if wf["z1"] < top else None
+    for g in getattr(m, "feature_walls", []):
+        if g["room"] == room["id"] and g.get("wall") == view["wall"]:
+            for ld in g.get("led", []):
+                x = ld["u"] - F.x_from
+                if 0 < x < L:
+                    FT.draw_led(C, x, ld.get("z0", 0), min(ld.get("z1", top), top))
+            FT.draw_pendants(C, g, F.x_from, top, L)
     # openings
     O = F.openings()
     glass = TX.hexc(TX.mix(T.BLUE, T.PAPER, 0.82))
@@ -463,6 +442,9 @@ def draw_elevation(sh, m, view, k, x0, y0):
                 C.rect(o["xa"] - 30, o["xb"] + 30, sill - 20, sill, fill=TX.hexc(pal["worktop"]), edge=T.INK,
                        lw=LW_HAIR, z=6)
             levels.append((sill, o["id"] + " sill", m.is_flagged(o, "sill"))) if sill else None
+        elif o.get("concealed"):
+            host = next((w for w in F.features() if w["id"] == o.get("concealed_in")), None)
+            FT.draw_concealed(C, o["xa"], o["xb"], head, FT.tone_of(m, host) if host else TX.finish_tone({}))
         elif o["kind"] in ("door", "double_door"):
             C.rect(o["xa"], o["xb"], 0, head, fill=door, edge=T.INK, lw=LW_LINE, z=5)
             hx = o["xb"] - 80 if (o["xa"] + o["xb"]) / 2 < L / 2 else o["xa"] + 80

@@ -198,6 +198,8 @@ def _parts(m, v):
 
 # ------------------------------------------------------------------ drawing helpers
 class Elev:
+    s = S                                          # scale denominator (features.draw_pendants)
+
     def __init__(self, sh, F: Face, ex0, ey0):
         self.sh, self.F, self.ex0, self.ey0 = sh, F, ex0, ey0
 
@@ -371,27 +373,27 @@ def draw_elevation(sh, m, view, ex0, ey0):
         sh.text(E.X(L / 2), E.Z(ph) - 2.0, f"OPEN ABOVE PARAPET +{ph}" + ("*" if pfl else ""), sans("dim", 600),
                 T.FLAG if pfl else T.GREY, ha="center", zorder=7)
 
-    # wall features (tile pattern), clipped round openings
+    # wall features (STANDARDS §4): one drawing routine for every element type
+    from atelier import features as FT
     for wf in FW:
-        f_ = fin.get(wf.get("finish"), {})
-        E.rect(wf["xa"], wf["xb"], wf["z0"], wf["z1"], fill=TX.hexc(TX.mix(T.PAPER, T.LIGHT, 0.55)), z=3)
-        ts = _tile_size(f_.get("name"))
-        if ts:
-            tw, th = ts
-            z = wf["z0"]
-            row = 0
-            while z < wf["z1"] - 1:
-                E.line([(wf["xa"], z), (wf["xb"], z)], T.HAIR, LW_HAIR, z=3)
-                x = wf["xa"] + (tw / 2 if row % 2 else 0)
-                while x < wf["xb"]:
-                    E.line([(x, z), (x, min(z + th, wf["z1"]))], T.HAIR, LW_HAIR, z=3)
-                    x += tw
-                z += th
-                row += 1
+        FT.draw(E, m, wf, wf["xa"], wf["xb"], wf["z0"], min(wf["z1"], top_fc))
+    for g in getattr(m, "feature_walls", []):                   # LED reveals at joints
+        if g["room"] == F.room["id"] and g.get("wall") == F.wall["id"]:
+            for ld in g.get("led", []):
+                x = ld["u"] - F.x_from
+                if 0 < x < L:
+                    FT.draw_led(E, x, ld.get("z0", 0), min(ld.get("z1", top_fc), top_fc))
+            FT.draw_pendants(E, g, F.x_from, top_fc, L)
     # openings
     for o in O:
         sill = o.get("sill", 0) if o["kind"] in ("window", "ventilator") else 0
         head = o.get("head", 2100)
+        if o.get("concealed"):                                  # flush door hidden in the panelling
+            host = next((w for w in FW if w["id"] == o.get("concealed_in")), None)
+            FT.draw_concealed(E, o["xa"], o["xb"], head, FT.tone_of(m, host) if host else TX.finish_tone({}))
+            E.sh.text(E.X((o["xa"] + o["xb"]) / 2), E.Z(head) - 1.4, o["id"], sans("dim", 600), T.GREY,
+                      ha="center", zorder=6)
+            continue
         E.rect(o["xa"], o["xb"], sill, head, fill=T.PAPER, edge=T.INK, lw=LW_LINE, z=5)
         if o["kind"] in ("window", "ventilator"):
             E.rect(o["xa"] + 50, o["xb"] - 50, sill + 50, head - 50, edge=T.INK, lw=LW_HAIR, z=5)

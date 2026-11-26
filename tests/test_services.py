@@ -38,6 +38,17 @@ for j in m.joinery:
         o += md["w"]
 
 fans = {i["room"]: Point(i["at"]) for i in by("fan")}
+def _split_without_feature():
+    from atelier.model import load as _load
+    from atelier.services import Builder as _B
+    mm = _load(ROOT / "projects" / "sample")
+    mm.design["wall_features"] = [w for w in mm.design["wall_features"] if w["room"] != "BR2"]
+    mm.feature_walls = [g for g in mm.feature_walls if g["room"] != "BR2"]
+    its = _B(mm).run()
+    return any(i["kind"] == "split" and i["room"] == "BR2" for i in its) and \
+        not any(i["kind"] == "ducted" and i["room"] == "BR2" for i in its)
+
+
 checks = [
     ("R6.1 boards at h1200", all(i["z"] == 1200 for i in by("switchboard"))),
     ("R6.2 wet-room boards outside", all(i["room"] not in wet for i in by("switchboard") if i.get("serves") in wet)),
@@ -51,8 +62,9 @@ checks = [
     ("R6.8 wet power/lighting IP44", all(i.get("ip") == "IP44" for i in S if i["room"] in wet
                                          and i["system"] in ("power", "lighting"))),
     ("R6.9 one DB, VDP, router", all(len(by(k)) == 1 for k in ("db", "vdp", "router"))),
-    ("R6.10 ducted LD+MBR, split BR2", {i["room"] for i in by("ducted")} == {"LD", "MBR"}
-     and {i["room"] for i in by("split")} == {"BR2"}),
+    ("R6.10 ducted where feature wall + tray (LD, MBR, BR2)", {i["room"] for i in by("ducted")} == {"LD", "MBR", "BR2"}
+     and not {i["room"] for i in by("split")} & {"LD", "MBR", "BR2"}),
+    ("R6.10 split without a feature wall (BR2 variant)", _split_without_feature()),
     ("R6.11 one fan per bedroom/living", sorted(i["room"] for i in by("fan")) == ["BR2", "LD", "MBR"]),
     ("R6.12 downlights >= 700 from fan", all(Point(d["at"]).distance(fans[d["room"]]) >= 700
                                             for d in by("downlight") if d["room"] in fans)),

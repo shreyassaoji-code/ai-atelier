@@ -39,6 +39,7 @@ class Model:
     design_raw: dict = field(default_factory=dict)       # design in engine schema (after atelier/vocab.py)
     design_brief: dict = field(default_factory=dict)     # design file as written
     extras: dict = field(default_factory=dict)           # palette, style, summary, switch_spots (brief)
+    feature_walls: list = field(default_factory=list)    # interpreter's feature walls (atelier/features.py)
     override_errors: list = field(default_factory=list)
 
     # ---- lookups
@@ -199,6 +200,8 @@ def load(root, design: str | None | bool = None) -> Model:
         else:
             m.rooms.append(copy.deepcopy(r))
     m.design = {k: copy.deepcopy(ds.get(k, [])) for k in DESIGN_LISTS}
+    from atelier import features
+    features.expand(m)                                      # interpreter's feature walls -> engine entries
     for k in ("new_walls", "new_openings", "rooms", *DESIGN_LISTS):
-        _collect_flags(k, ds.get(k, []), dff, m.verify)
+        _collect_flags(k, m.design.get(k, []) if k in DESIGN_LISTS else ds.get(k, []), dff, m.verify)
     return m

@@ -89,6 +89,7 @@ Source: brief of 2026-11-25. The order is kept in `atelier/album.py` (`ORDER`); 
 | 6 | `presentation` | Presentation plan | album |
 | 7 | `furniture` | Furniture plan | album |
 | 8 | `room:*` | Room boards (§2a) | bedroom, living, kitchen |
+| 8a | `feature:*` | Feature wall sheets (§4) | feature wall written by the reference interpreter |
 | 9 | `flooring` | Flooring plan | album |
 | 10 | `wall_finishes` | Wall finish plan | album |
 | 11 | `ceiling` | Ceiling plan | album |
@@ -144,6 +145,21 @@ Source: brief of 2026-11-25. Values marked **(default)** are Atelier defaults, n
 | C3.10 | Cove geometry **(default)**: trough **150** wide on the raised side of the step edge; upstand **75** or half the step, whichever is less; board **12.5**; GI ceiling section @ **450** c/c; rods @ **1200** c/c; slab **150**; LED **24 V, 2700 K** in aluminium profile with opal diffuser. |
 | C3.11 | The slab soffit comes from `levels.soffit`; when flagged it prints with `*` on both sheets. |
 | C3.12 | Every false-ceiling level (base, steps, core) is at least **150** below the slab soffit (`E-CEIL`); domes may rise to 50 below. Trays have **1–2** steps with bands **350–600** (designer brief; `W-CEIL` otherwise). Bedrooms, living/dining and foyer get a tray; baths and kitchen are flat. |
+
+## 4. Feature walls
+
+Source: brief of 2026-11-26 (`agents/reference.md`). **(default)** = Atelier default.
+
+| Rule | Requirement (tick or fail) |
+|---|---|
+| FW4.1 | Each feature wall is written by the reference interpreter as `wall_features[]` with `items` (SCHEMA §2c) on the wall that plays the role: the bed's back edge in a bedroom, the TV wall in living. |
+| FW4.2 | Elements run left → right from the left corner as seen from inside, within the wall length `L`, without overlapping (`E-FEATURE`). Types: `mural` `upholstered` `fluted` `slats` `mirror` `lineart` `arch` `niche` `paint` `stone` (and `panelling` `cladding` `wallpaper` `tile` `headboard`). Depths **(default)**: upholstered 60, slats 40, arch 40, fluted 25, mural 20, lineart 20, mirror 8, paint 2. |
+| FW4.3 | **No element covers a window.** A door inside a panelled element is a flush concealed door (`concealed: true` on the element): drawn as CONCEALED DOOR in the panel's finish, never left as a visible door in a panelled zone (`E-FEATURE-OPENING`). |
+| FW4.4 | The bed or TV stays centred on its element (± 50, `W-FEATURE-CENTRE`); nightstands stand in front of the side elements. No element is hidden behind tall joinery (`W-FEATURE-HIDDEN`). |
+| FW4.5 | Light: LED reveals at the joints listed in `led`; a `backlit` element glows at its edges; an `arch` carries an LED line round the arch; `niche`s are lit at the top. Pendants (`u`, `out` **300 (default)**, bottom `z`, `d`, drop) become ceiling fittings of the room. |
+| FW4.6 | The ceiling of the room follows §3 (≥ 150 below the slab); a room with a feature wall and a tray ceiling gets ducted AC with a slot diffuser (R6.10), so no split unit interrupts the wall. |
+| FW4.7 | One **Feature wall sheet** per feature wall: the wall at **1:25** (1:50 if too long) cropped to the feature + 300, every element called out with its code; the 3D view of the wall rendered from the data beside the client's reference image (`ref`); an element schedule (u, width, z, depth, type, code, colour, extras); swatches; the interpreter's note. A missing render or reference is shown as an empty, labelled frame. |
+| FW4.8 | Colours are names (`"color": "sage"`), mixed from theme tokens; codes are added to `feature_materials` / `finishes`. |
 
 ## 5. Elevation detail (1:25)
 

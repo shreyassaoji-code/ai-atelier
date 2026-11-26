@@ -29,7 +29,7 @@ from atelier import theme as T
 from atelier.registry import SHEET_DEFS, SHEETS
 
 # STANDARDS §2: the album order. "family:*" expands to one page per item, in data order.
-ORDER = ["cover", "contents", "measured", "dismantling", "partitions", "presentation", "furniture", "room:*",
+ORDER = ["cover", "contents", "measured", "dismantling", "partitions", "presentation", "furniture", "room:*", "feature:*",
          "flooring", "wall_finishes", "ceiling", "sections", "power", "lighting", "switching", "plumbing", "ac",
          "elevation:*", "dt01", "dt02", "joinery:*"]
 MM_PT = 72 / 25.4
@@ -43,6 +43,8 @@ def _family(m, fam):
     if fam == "elevation":
         from atelier.elev_detail import elevation_views
         return [v["id"] for v in elevation_views(m)]
+    if fam == "feature":
+        return [g["id"] for g in getattr(m, "feature_walls", [])]
     if fam == "joinery":
         return [j["id"] for j in m.joinery]
     raise KeyError(fam)
@@ -72,6 +74,9 @@ def info(m, n):
         jid = n.split(":", 1)[1]
         sc = choose_layout(Item(m, next(j for j in m.joinery if j["id"] == jid)))[0]
         return (f"Joinery board {jn_number(m, jid)} · {jid}", f"1:{sc}")
+    if n.startswith("feature:"):
+        g = next(x for x in m.feature_walls if x["id"] == n.split(":", 1)[1])
+        return (f"Feature wall · {g['id']} · {m.room(g['room']).get('name', g['room'])}", "1:25")
     if n.startswith("room:"):
         from atelier.room_board import layout
         from atelier.views3d import key_walls
@@ -89,6 +94,9 @@ def make(m, no, total, name):
     if name.startswith("joinery:"):
         from atelier.boards import board
         return board(m, no, total, name.split(":", 1)[1])
+    if name.startswith("feature:"):
+        from atelier.feature_sheet import sheet
+        return sheet(m, no, total, name.split(":", 1)[1])
     if name.startswith("room:"):
         from atelier.room_board import board
         return board(m, no, total, name.split(":", 1)[1])
