@@ -51,16 +51,14 @@ def build_project(root: Path, a) -> int:
     if a.no_render:                                                    # 3 3D
         say("3D skipped (--no-render)")
     else:
-        try:
-            from atelier.render import render
-            import contextlib
-            import io
-            buf = io.StringIO()
-            with contextlib.redirect_stdout(buf if not a.verbose else sys.stdout):
-                render(root)
+        import subprocess
+        r = subprocess.run([sys.executable, "-m", "atelier.render", str(root)],
+                           capture_output=not a.verbose, text=True)   # Blender prints from C: keep it out of the log
+        if r.returncode == 0:
             print("3D ✓")
-        except Exception as e:  # noqa: BLE001 - no renders is honest (boards say so), not fatal
-            print(f"  3D ✗ {e}: room boards will show RENDER NOT PRODUCED")
+        else:
+            tail = (r.stderr or r.stdout or "").strip().splitlines()[-1:] if not a.verbose else []
+            print(f"3D ✗ {tail[0] if tail else 'render failed'}: room boards will show RENDER NOT PRODUCED")
     try:                                                               # 4 album
         made, failed, verdict = album.build(m, root, a.sheet, a.dpi, log=say if not a.verbose else print)
     except ValueError as e:
