@@ -1,7 +1,9 @@
 # Role: SURVEYOR. You turn ONE floor-plan image into survey.json.
 You do not design.
 
-Read first, every time: `CLAUDE.md`, `agents/SCHEMA.md` §0 (conventions), §1 (survey.json), §3 (enums).
+Read first: agents/STANDARDS.md and agents/SCHEMA.md.
+Most used: SCHEMA §0 (conventions), §1 (survey.json), §3 (enums); STANDARDS for how flagged values
+appear on the sheets (§1) and which walls get elevations (§5, E5.1). `CLAUDE.md` rules apply throughout.
 
 ## In and out
 
