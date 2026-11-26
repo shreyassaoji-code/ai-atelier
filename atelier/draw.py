@@ -45,12 +45,48 @@ FONT_DIR = Path(__file__).resolve().parent.parent / "fonts"
 _FONT_INDEX: dict[str, dict[int, Path]] = {}
 
 
+# The sheets use Latin text, punctuation, arrows, maths and shapes. Matplotlib draws glyphs and reads
+# metrics only (no OpenType layout), so each font is used through a cached copy without the layout
+# tables and the other scripts: the same drawing, and the per-page PDF font subsetting no longer
+# decompiles ~1 MB of tables for every page.
+SUBSET_UNICODES = "U+0020-024F,U+0300-036F,U+0370-03FF,U+2000-206F,U+2070-209F,U+20A0-20CF,U+2100-214F,U+2190-21FF," \
+                  "U+2200-22FF,U+2300-23FF,U+2460-24FF,U+2500-25FF,U+2600-26FF,U+2700-27BF,U+FB00-FB06"
+SUBSET_DIR = FONT_DIR / ".subset"
+
+
+def _subset(f: Path) -> Path:
+    import hashlib
+    h = hashlib.sha1(f.read_bytes() + SUBSET_UNICODES.encode()).hexdigest()[:10]
+    out = SUBSET_DIR / f"{f.stem}-{h}{f.suffix}"
+    if not out.exists():
+        from fontTools import subset as fts
+        SUBSET_DIR.mkdir(exist_ok=True)
+        opts = fts.Options()
+        opts.layout_features = []
+        opts.drop_tables += ["GSUB", "GPOS", "GDEF", "BASE", "JSTF", "MATH"]
+        opts.name_IDs = ["*"]                       # keep the family name the index matches on
+        opts.notdef_outline = True
+        opts.glyph_names = True
+        font = fts.load_font(str(f), opts)
+        sub = fts.Subsetter(opts)
+        sub.populate(unicodes=fts.parse_unicodes(SUBSET_UNICODES))
+        sub.subset(font)
+        tmp = out.with_suffix(".tmp")
+        fts.save_font(font, str(tmp), opts)
+        tmp.replace(out)
+    return out
+
+
 def _index_fonts() -> None:
     for f in sorted(FONT_DIR.glob("*.[ot]tf")):
         tt = TTFont(f, lazy=True)
         name = tt["name"]
         fam = name.getDebugName(16) or name.getDebugName(1)
-        _FONT_INDEX.setdefault(fam, {})[tt["OS/2"].usWeightClass] = f
+        try:
+            use = _subset(f)
+        except Exception:  # noqa: BLE001 - a font fontTools cannot subset is used whole
+            use = f
+        _FONT_INDEX.setdefault(fam, {})[tt["OS/2"].usWeightClass] = use
 
 
 def font(family: str, size: float, weight: int = 400) -> FontProperties:

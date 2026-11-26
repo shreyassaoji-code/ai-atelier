@@ -164,7 +164,17 @@ def _split_points(F, n):
 
 def elevation_views(m):
     """Every elevation sheet: design views[] of kind elevation first (in their room's place), then each
-    remaining wall face of every room. Faces longer than MAX_PART become parts -p1, -p2 … with match lines."""
+    remaining wall face of every room. Faces longer than MAX_PART become parts -p1, -p2 … with match lines.
+    Cached on the model: the list depends only on its data and the services it carries."""
+    import copy as _copy
+    key = id(getattr(m, "services_items", None))
+    cache = m.__dict__.setdefault("_elev_views", {})
+    if key not in cache:
+        cache[key] = _elevation_views(m)
+    return _copy.deepcopy(cache[key])
+
+
+def _elevation_views(m):
     data = [v for v in m.views if v.get("kind") == "elevation"]
     used = {(v["room"], v["wall"]) for v in data}
     try:
