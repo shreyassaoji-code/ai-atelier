@@ -132,15 +132,15 @@ On load (`atelier/features.py`) each item becomes an engine wall feature (§2 `w
 ## 3a. services.json (written by `atelier.services`, not by agents) and services_overrides.json (written by agents)
 
 `services.json`: `{"schema": "atelier/services@1", "rules": "agents/STANDARDS.md §6", "items": [...]}`. Each item:
-`id` (stable: `<PREFIX>-<room>-<nn>`), `system` (`power` `lighting` `switching` `plumbing` `ac`), `kind`, `room`, `at` `[x, y]` (on the wall face for wall devices), `z` (mm, or `null` for ceiling items), `wall` (host wall id or `null`), `rule` (`R6.n`) or `source: "override"`, optional `ip`, `controls` (ids, switches only), `path` (polyline, cove and pipe runs), `size`, `odu` (outdoor unit point), `note`.
+`id` (stable: `<PREFIX>-<room>-<nn>`), `system` (`power` `lighting` `switching` `plumbing` `ac`), `kind`, `room`, `at` `[x, y]` (on the wall face for wall devices), `z` (mm, or `null` for ceiling items), `wall` (host wall id or `null`), `rule` (`R6.n`) or `source: "override"`, optional `ip`, `controls` (ids, switches only), `path` (polyline, cove and pipe runs), `size`, `odu` (outdoor unit point), `note`, `flag` (a default the designer must confirm), `also_serves` (switchboards serving a second room).
 
 | `kind` per system | Values |
 |---|---|
-| power | `socket` `socket_usb` `double_socket` `lan` `tv_power` `worktop_socket` `db` `vdp` `router` `geyser_point` `ac_isolator` `wm_socket` `ip44_socket` |
-| lighting | `downlight` `fan` `cove` `exhaust` |
+| power | `socket` `socket_usb` `double_socket` `lan` `media` `tv_power` `worktop_socket` `db` `vdp` `router` `geyser_point` `ac_isolator` `wm_socket` `ip44_socket` `fridge_socket` `oven_16a` `microwave_socket` `dw_socket` `chimney_point` `ro_point` |
+| lighting | `downlight` `fan` `cove` `exhaust` `mirror_light` `pendant` `track` |
 | switching | `switchboard` `switch_2way` |
 | plumbing | `cold` `hot` `waste` `soil` `floor_trap` `geyser` `hot_run` |
-| ac | `split` `ducted` `odu` `supply_grille` `return_grille` `refrigerant` |
+| ac | `split` `ducted` (the brief's `ac_ducted`) `odu` `supply_grille` (linear slot diffuser) `return_grille` `refrigerant` |
 
 `services_overrides.json`: `{"remove": [id, ...], "move": [{"id", "at", "z"}], "add": [item, ...]}`.
 

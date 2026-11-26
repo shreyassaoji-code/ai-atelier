@@ -32,8 +32,13 @@ NAMES = {
     "spotlight": "Spotlight", "strip": "LED strip", "switchboard": "Switchboard", "switch_2way": "2-way switch", "cold": "Cold water",
     "hot": "Hot water", "waste": "Waste", "soil": "Soil (WC)", "floor_trap": "Floor trap", "geyser": "Geyser",
     "hot_run": "Hot water run", "split": "Split AC", "ducted": "Ducted AC (concealed)", "odu": "Outdoor unit",
-    "supply_grille": "Linear supply grille", "return_grille": "Return grille", "refrigerant": "Refrigerant / drain route",
+    "supply_grille": "Linear slot diffuser", "return_grille": "Return grille", "refrigerant": "Refrigerant / drain route",
+    "media": "Media / HDMI point", "fridge_socket": "Fridge socket", "oven_16a": "Oven 16A",
+    "microwave_socket": "Microwave socket", "dw_socket": "Dishwasher 16A", "chimney_point": "Chimney point",
+    "ro_point": "RO purifier point", "mirror_light": "Mirror light IP44",
 }
+CODE_SYMBOL = {"media": "M", "fridge_socket": "F", "oven_16a": "O", "microwave_socket": "MW", "dw_socket": "DW",
+               "chimney_point": "CH", "ro_point": "RO"}
 
 
 def load_services(m):
@@ -139,6 +144,15 @@ def sym(sh, kind, x, y, vx=0.0, vy=-1.0, c=None, z=9):
         circ(1.9, f=T.PAPER, e=c, lw=LW_LINE); tx("G", c)
     elif kind == "return_grille":
         box(3.2, 1.8, hatch="||||")
+    elif kind in CODE_SYMBOL:                                   # appliance / media points: boxed code
+        box(3.0 if len(CODE_SYMBOL[kind]) > 1 else 2.4, 2.2,
+            f=T.PAPER if kind not in ("oven_16a", "dw_socket") else T.LIGHT); tx(CODE_SYMBOL[kind])
+    elif kind == "mirror_light":
+        px, py = -vy, vx
+        sh.line([(x - px * 1.8, y - py * 1.8), (x + px * 1.8, y + py * 1.8)], c, LW_LINE, z=z)
+        for k in (-1, 0, 1):
+            sh.line([(x + px * k * 1.2, y + py * k * 1.2), (x + px * k * 1.2 + vx * 0.9, y + py * k * 1.2 + vy * 0.9)],
+                    c, LW_HAIR, z=z)
     else:
         circ(1.0)
 
@@ -282,6 +296,9 @@ def schedule_rows(items, kinds):
     ov = [i["id"] for i in items if i.get("source") == "override"]
     if ov:
         rows.append(("ovr", "Overridden: " + ", ".join(ov), T.FLAG))
+    fl = [i["id"] for i in items if i.get("flag") and i["kind"] in kinds]
+    if fl:
+        rows.append(("*", "Default position, confirm with the designer: " + ", ".join(fl), T.FLAG))
     return rows
 
 
@@ -299,7 +316,7 @@ def _draw_points(sh, pv, items, color_of):
     for it in items:
         x, y, vx, vy = place(pv, it)
         sym(sh, it["kind"], x, y, vx or 0.0, vy or -1.0, color_of(it["kind"]))
-        label(sh, x, y, vx, vy, h_label(it))
+        label(sh, x, y, vx, vy, h_label(it), flag=bool(it.get("flag")))
 
 
 # ------------------------------------------------------------------ the five sheets
@@ -336,7 +353,7 @@ def _lighting_layer(sh, pv, items, faint=False):
             x, y, vx, vy = place(pv, it)
             sym(sh, k, x, y, vx or 0.0, vy or -1.0, a)
             if not faint:
-                label(sh, x, y, vx, vy, h_label(it))
+                label(sh, x, y, vx, vy, h_label(it), flag=bool(it.get("flag")))
 
 
 def lighting(m, no, total):
@@ -397,7 +414,7 @@ def switching(m, no, total):
     fr.head("Switch schedule")
     rows = []
     for s in sw:
-        serves = s.get("serves", s["room"])
+        serves = " + ".join([s.get("serves", s["room"])] + s.get("also_serves", []))
         rows.append((s["id"], f"{'2-way' if s['kind'] == 'switch_2way' else 'board'} in {s['room']}"
                               f"{' for ' + serves if serves != s['room'] else ''}: {len(s.get('controls', []))} fittings",
                      None))

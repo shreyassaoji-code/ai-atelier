@@ -36,7 +36,15 @@ PREFIX = {
     "pendant": "PD", "track": "TK", "chandelier": "CH", "spotlight": "SP", "strip": "ST",
     "cold": "CW", "hot": "HW", "waste": "WW", "soil": "SL", "floor_trap": "FT", "geyser": "GY", "hot_run": "HR",
     "split": "AC", "ducted": "AD", "odu": "OU", "supply_grille": "SG", "return_grille": "RG", "refrigerant": "RF",
+    "media": "MD", "fridge_socket": "FR", "oven_16a": "OV", "microwave_socket": "MW", "dw_socket": "DW",
+    "chimney_point": "CY", "ro_point": "RO", "mirror_light": "ML",
 }
+KITCHEN_APPLIANCES = [          # (kind, words in a module label, height; STANDARDS R6.7a)
+    ("fridge_socket", ("fridge", "refrigerator"), 300),
+    ("oven_16a", ("oven",), 300),
+    ("microwave_socket", ("microwave", "micro"), 1600),
+    ("dw_socket", ("dishwasher", "dw"), 300),
+]
 
 
 class Builder:
@@ -149,11 +157,24 @@ class Builder:
                     others = self.room_touching(geom.opening_polygon(w, o, 2), exclude=r["id"])
                     target = others[0] if others else r["id"]
                 latch_end = o.get("hinge") != "end"
-                off = o["offset"] + o["width"] + 150 if latch_end else o["offset"] - 150
-                if not (60 < off < geom.wall_length(w) - 60):
-                    off = o["offset"] - 150 if latch_end else o["offset"] + o["width"] + 150
+                latch = o["offset"] + o["width"] + 150 if latch_end else o["offset"] - 150
+                hinge = o["offset"] - 150 if latch_end else o["offset"] + o["width"] + 150
+                L_w = geom.wall_length(w)
+                tall = [(j["offset"], j["offset"] + j["width"]) for j in self.m.joinery
+                        if j["wall"] == w["id"] and j["room"] == target and j.get("z", 0) < 1200 <
+                        j.get("z", 0) + j.get("height", 850)]
+                off = next((x for x in (latch, hinge) if 60 < x < L_w - 60 and not any(a - 60 < x < b + 60
+                                                                                        for a, b in tall)), None)
+                if off is None:
+                    continue
                 f, t = self.face_on_wall(target, w["id"], geom.point_on_wall(w, off))
                 if f is None:
+                    continue
+                near = next((i for i in self.items if i["kind"] == "switchboard" and i["room"] == target and
+                             Point(i["at"]).distance(Point(self.at_t(f, t))) < 400), None)
+                if near is not None:                            # one board serves both rooms
+                    if r["id"] != near.get("serves"):
+                        near.setdefault("also_serves", []).append(r["id"])
                     continue
                 self.wall_device("switching", "switchboard", target, f, t, 1200, "R6.2" if wet else "R6.1",
                                  serves=r["id"])
@@ -211,8 +232,9 @@ class Builder:
             w = self.m.wall(j["wall"])
             c = geom.point_on_wall(w, j["offset"] + j["width"] / 2)
             f, t = self.face_on_wall(j["room"], w["id"], c)
-            self.wall_device("power", "tv_power", j["room"], f, t - 150, 1100, "R6.6")
-            self.wall_device("power", "lan", j["room"], f, t + 150, 1100, "R6.6")
+            self.wall_device("power", "tv_power", j["room"], f, t, 1100, "R6.6", note="behind the TV")
+            for dt, kind in ((-250, "double_socket"), (0, "lan"), (250, "media")):     # console devices
+                self.wall_device("power", kind, j["room"], f, t + dt, 550, "R6.6")
 
     # ------------------------------------------------------------ R6.7 worktop
     def r6_7_worktop(self):
@@ -225,6 +247,9 @@ class Builder:
                 mods.append((o, o + md["w"], md["type"]))
                 o += md["w"]
             avoid = [(a - 150, b + 150) for a, b, ty in mods if ty in ("sink", "hob")]
+            for o in self.m.openings_on(w["id"]):              # never on a window over the worktop
+                if o["kind"] in ("window", "ventilator") and o.get("sill", 900) < 1250:
+                    avoid.append((o["offset"] - j["offset"] - 100, o["offset"] + o["width"] - j["offset"] + 100))
             s = 450
             while s <= j["width"] - 150:
                 if not any(a < s < b for a, b in avoid):
@@ -236,6 +261,91 @@ class Builder:
                 else:
                     s += 150
         return
+
+    def r6_7a_kitchen(self):
+        """Chimney over each hob, RO beside each kitchen sink; fridge / oven / microwave / DW at their
+        labelled appliance modules, else at a default spot, flagged for the designer to confirm."""
+        for r in self.rooms_of({"kitchen"}):
+            rid = r["id"]
+            runs = [j for j in self.m.joinery if j["room"] == rid and j.get("kind") in ("kitchen_base", "tall_unit",
+                                                                                      "kitchen_wall")]
+            mods = []
+            for j in runs:
+                w = self.m.wall(j["wall"])
+                for row in j.get("rows", []):
+                    o = j["offset"]
+                    for md in row["modules"]:
+                        mods.append((j, w, o, md))
+                        o += md["w"]
+            for j, w, o, md in mods:
+                c = geom.point_on_wall(w, o + md["w"] / 2)
+                f, t = self.face_on_wall(rid, w["id"], c)
+                if f is None:
+                    continue
+                if md["type"] == "hob":
+                    self.wall_device("power", "chimney_point", rid, f, t, 2200, "R6.7a", note="chimney over the hob")
+                if md["type"] == "sink" and j.get("kind") == "kitchen_base":
+                    wins = [(o["offset"] - 100, o["offset"] + o["width"] + 100) for o in self.m.openings_on(w["id"])
+                            if o["kind"] in ("window", "ventilator") and o.get("sill", 900) < 1900]
+                    s0 = o + md["w"] / 2
+                    cand = [s0 + d for d in range(450, 3000, 50) for d in (d, -d)]
+                    s1 = next((x for x in cand if 60 < x < geom.wall_length(w) - 60 and
+                               not any(a < x < b for a, b in wins)), None)
+                    if s1 is not None:
+                        f1, t1 = self.face_on_wall(rid, w["id"], geom.point_on_wall(w, s1))
+                        if f1 is not None:
+                            self.wall_device("power", "ro_point", rid, f1, t1, 1800, "R6.7a",
+                                             note="RO purifier; cold from the sink")
+            for kind, words, z in KITCHEN_APPLIANCES:
+                hit = next(((j, w, o, md) for j, w, o, md in mods if any(
+                    wd in f"{md.get('label', '')} {md['type']}".lower().split() or wd in str(md.get("label", "")).lower()
+                    for wd in words)), None)
+                if hit:
+                    j, w, o, md = hit
+                    f, t = self.face_on_wall(rid, w["id"], geom.point_on_wall(w, o + md["w"] / 2))
+                    if f is not None:
+                        self._appliance(rid, kind, f, t, z, "R6.7a")
+                    continue
+                self._appliance_default(rid, kind, z, mods)
+
+        return
+
+    def _appliance(self, rid, kind, f, t, z, rule, flag=False, note=None):
+        fl = dict(flag=True) if flag else {}
+        self.wall_device("power", kind, rid, f, t, z, rule, note=note, **fl)
+        if kind == "dw_socket":                                  # DW: water and drain beside its socket
+            self.wall_device("plumbing", "cold", rid, f, t - 120, 300, rule, note="dishwasher inlet", **fl)
+            self.wall_device("plumbing", "waste", rid, f, t + 120, 300, rule, note="dishwasher drain", **fl)
+
+    def _appliance_default(self, rid, kind, z, mods):
+        if kind == "dw_socket":                              # beside the sink: the next base module becomes the DW
+            sink = next(((j, w, o, md) for j, w, o, md in mods if md["type"] == "sink"), None)
+            if not sink:
+                return
+            j, w, o, md = sink
+            nxt = [(j2, w2, o2, m2) for j2, w2, o2, m2 in mods if j2 is j and m2["type"] in ("shutter", "drawer")
+                   and (abs(o2 - (o + md["w"])) < 2 or abs(o2 + m2["w"] - o) < 2)]
+            if not nxt:
+                return
+            j2, w2, o2, m2 = nxt[0]
+            f, t = self.face_on_wall(rid, w2["id"], geom.point_on_wall(w2, o2 + m2["w"] / 2))
+            if f is not None:
+                self._appliance(rid, kind, f, t, z, "R6.7a", flag=True,
+                                note=f"no dishwasher slot: module {j2['id']} {o2 - j2['offset']}-{o2 - j2['offset'] + m2['w']} "
+                                     f"to become a 600 DW housing (confirm)")
+            return
+        # fridge / oven / microwave: the kitchen's longest free wall stretch (no joinery, no opening)
+        best = None
+        for f in self.faces[rid]:
+            for a, b in self.free_stretches(rid, f, 300):
+                if b - a >= 700 and (best is None or b - a > best[2] - best[1]):
+                    best = (f, a, b)
+        if not best:
+            return
+        f, a, b = best
+        t = a + 350 if kind == "fridge_socket" else min(a + 1050, b - 300) + (-150 if kind == "oven_16a" else 150)
+        self._appliance(rid, kind, f, t, z, "R6.7a", flag=True,
+                        note=f"no {kind.split('_')[0]} slot in the joinery: default on the free wall (confirm)")
 
     # ------------------------------------------------------------ R6.8 wet rooms, WM
     def r6_8_wet(self):
@@ -269,10 +379,29 @@ class Builder:
                     fj, tj = self.face_on_wall(rid, w["id"], geom.point_on_wall(w, off))
                     if fj is not None:
                         self.wall_device("power", "ip44_socket", rid, fj, tj, 1100, "R6.8", ip="IP44")
+                    fm, tm = self.face_on_wall(rid, w["id"], geom.point_on_wall(w, j["offset"] + j["width"] / 2))
+                    if fm is not None:
+                        self.wall_device("lighting", "mirror_light", rid, fm, tm, 1950, "R6.8", ip="IP44",
+                                         note="over the vanity mirror")
         for s in self.m.sanitary:
             if s["kind"] == "washing_machine":
                 f, t = self.nearest_face(s["room"], s["at"])
                 self.wall_device("power", "wm_socket", s["room"], f, t + 350, 1100, "R6.8", ip="IP44")
+                fx, fy = geom.compass_to_vec(s.get("facing", "N"))           # floor trap in front of the machine
+                self.add("plumbing", "floor_trap", s["room"],
+                         (s["at"][0] + fx * (s["size"][1] / 2 + 150), s["at"][1] + fy * (s["size"][1] / 2 + 150)), 0,
+                         "R6.8", note="washing machine overflow")
+        for r in self.rooms_of({"balcony"}):                             # balcony IP44 socket
+            best = None
+            for f in self.faces[r["id"]]:
+                if self.m.wall(f.wall).get("kind") == "parapet":
+                    continue
+                for a, b in self.free_stretches(r["id"], f, 300):
+                    if best is None or b - a > best[2] - best[1]:
+                        best = (f, a, b)
+            if best:
+                f, a, b = best
+                self.wall_device("power", "ip44_socket", r["id"], f, (a + b) / 2, 1100, "R6.8", ip="IP44")
 
     # ------------------------------------------------------------ R6.9 entry
     def r6_9_entry(self):
@@ -289,11 +418,11 @@ class Builder:
             l_off = o["offset"] - 450 if hinge_end else o["offset"] + o["width"] + 450
             f, t = self.face_on_wall(rid, w["id"], geom.point_on_wall(w, h_off))
             if f is not None:
-                self.wall_device("power", "db", rid, f, t, 1500, "R6.9")
+                self.wall_device("power", "db", rid, f, t, 1800, "R6.9")
                 self.wall_device("power", "router", rid, f, t - 450 if t > 600 else t + 450, 2100, "R6.9")
             f, t = self.face_on_wall(rid, w["id"], geom.point_on_wall(w, l_off))
             if f is not None:
-                self.wall_device("power", "vdp", rid, f, t, 1400, "R6.9")
+                self.wall_device("power", "vdp", rid, f, t, 1450, "R6.9")
             break
 
     # ------------------------------------------------------------ R6.10 AC
@@ -306,8 +435,11 @@ class Builder:
             ext = [f for f in self.faces[rid] if self.m.wall(f.wall).get("kind") == "external"]
             if not ext:
                 continue
+            fwalls = {wf["wall"] for wf in feats}
+            ffaces = [f for f in self.faces[rid] if f.wall in fwalls]
+            fdir = self.into(max(ffaces, key=lambda f: f.length)) if ffaces else None
             if feats and tray:
-                f = max(ext, key=lambda f: f.length)
+                f = max([e for e in ext if e.wall not in fwalls] or ext, key=lambda f: f.length)   # not the feature wall
                 t = f.length / 2
                 face_pt = self.at_t(f, t)
                 step = geom.step_polygon(r, ceil["steps"][0])
@@ -322,32 +454,34 @@ class Builder:
                 self.add("ac", "refrigerant", rid, unit, None, "R6.10",
                          path=[[round(unit[0]), round(unit[1])], [round(face_pt[0]), round(face_pt[1])],
                                [round(odu[0]), round(odu[1])]])
-                if not step.is_empty:
+                slot = self._slot_opposite(rid, r, step, fdir) if fdir is not None and not step.is_empty else None
+                if slot is None and not step.is_empty:              # no opposite face: along the nearest step edge
                     cs = list(step.exterior.coords)
                     edges = [(cs[i], cs[i + 1]) for i in range(len(cs) - 1)]
                     a, b = min(edges, key=lambda e: LineString(e).distance(Point(unit)) - LineString(e).length * 1e-4)
                     L = math.dist(a, b)
                     ux, uy = (b[0] - a[0]) / L, (b[1] - a[1]) / L
-                    m0 = (a[0] + ux * L * 0.2, a[1] + uy * L * 0.2)
-                    m1 = (a[0] + ux * L * 0.8, a[1] + uy * L * 0.8)
+                    slot = ((a[0] + ux * L * 0.2, a[1] + uy * L * 0.2), (a[0] + ux * L * 0.8, a[1] + uy * L * 0.8))
+                if slot:
+                    m0, m1 = slot
                     self.add("ac", "supply_grille", rid, ((m0[0] + m1[0]) / 2, (m0[1] + m1[1]) / 2), None, "R6.10",
-                             path=[[round(m0[0]), round(m0[1])], [round(m1[0]), round(m1[1])]])
+                             path=[[round(m0[0]), round(m0[1])], [round(m1[0]), round(m1[1])]],
+                             note="linear slot diffuser in the band opposite the feature wall")
                 ret = (unit[0] + ix * 0, unit[1] + iy * 0)
                 rx, ry = self.at_t(f, min(t + 900, f.length - 400))
                 self.add("ac", "return_grille", rid, (rx + ix * inset * 0.5, ry + iy * inset * 0.5), None, "R6.10",
                          size=[600, 300])
                 _ = ret
                 continue
-            # split
-            if feats:
-                fw = feats[0]
-                fwall = self.m.wall(fw["wall"])
-                ffaces = [f for f in self.faces[rid] if f.wall == fwall["id"]]
-                fdir = self.into(ffaces[0]) if ffaces else None
-                cands = [f for f in self.faces[rid] if fdir is not None and abs(((self.into(f) - fdir) % 360) - 180) < 10]
-            else:
-                cands = []
-            cands = cands or ext
+            # split: never on a feature wall; not on the wall the bed faces (it would blow at the bed head)
+            bed = next((b for b in self.m.furniture if b["room"] == rid and b.get("kind") == "bed"), None)
+            foot = None
+            if bed:
+                bx, by = geom.compass_to_vec(bed.get("facing", "N"))
+                foot = round(math.degrees(math.atan2(-bx, -by))) % 360     # inward normal of the foot wall
+            ok = lambda f: f.wall not in fwalls and (foot is None or abs(((self.into(f) - foot + 180) % 360) - 180) > 30)  # noqa: E731
+            cands = [f for f in ext if ok(f)] or [f for f in self.faces[rid] if ok(f)] or \
+                [f for f in ext if f.wall not in fwalls] or ext
             best = None
             for f in cands:
                 for a, b in self.free_stretches(rid, f, 300):
@@ -375,6 +509,25 @@ class Builder:
             path.append([round(odu[0]), round(odu[1])])
             self.add("ac", "refrigerant", rid, unit["at"], None, "R6.10", path=path)
 
+    def _slot_opposite(self, rid, r, step, fdir):
+        """Slot diffuser in the ceiling band on the face opposite the feature wall: from 20 % to 80 % of that
+        face, midway between the face and the tray step edge."""
+        opp = [f for f in self.faces[rid] if abs(((self.into(f) - fdir) % 360) - 180) < 10]
+        if not opp:
+            return None
+        f = max(opp, key=lambda e: e.length)
+        mid = self.at_t(f, f.length / 2)
+        ang = math.radians(self.into(f))
+        ix, iy = math.sin(ang), math.cos(ang)
+        ray = LineString([mid, (mid[0] + ix * 5000, mid[1] + iy * 5000)])
+        hit = ray.intersection(step.exterior)
+        if hit.is_empty:
+            return None
+        band = min(Point(mid).distance(g) for g in getattr(hit, "geoms", [hit]))
+        d = band / 2
+        p0, p1 = self.at_t(f, f.length * 0.2), self.at_t(f, f.length * 0.8)
+        return ((p0[0] + ix * d, p0[1] + iy * d), (p1[0] + ix * d, p1[1] + iy * d))
+
     def _outside(self, f, t):
         w = self.m.wall(f.wall)
         p = self.at_t(f, t)
@@ -385,9 +538,17 @@ class Builder:
 
     # ------------------------------------------------------------ R6.11 – R6.13 lighting
     def r6_11_fans(self):
+        """BLDC 1200 fan centred in the room; in living rooms over the centre of the seating rug."""
         for r in self.rooms_of(FAN_ROOMS):
             c = self.poly[r["id"]].centroid
-            self.add("lighting", "fan", r["id"], (c.x, c.y), None, "R6.11", size=[1200, 1200])
+            at, note = (c.x, c.y), "BLDC, room centre"
+            if r.get("type") in ("living", "living_dining"):
+                seats = [f for f in self.m.furniture if f["room"] == r["id"] and f.get("kind") in ("sofa", "armchair")]
+                rugs = [f for f in self.m.furniture if f["room"] == r["id"] and f.get("kind") == "rug"]
+                if rugs and seats:
+                    rug = min(rugs, key=lambda g: min(Point(g["at"]).distance(Point(s_["at"])) for s_ in seats))
+                    at, note = tuple(rug["at"]), f"BLDC, over the seating rug {rug['id']}"
+            self.add("lighting", "fan", r["id"], at, None, "R6.11", size=[1200, 1200], note=note)
 
     def r6_12_downlights(self, pitch=1200):
         """Grid of `pitch`, centred on the room (or offset half a pitch if that fits more)."""
@@ -453,9 +614,9 @@ class Builder:
                 self.add("lighting", "cove", r["id"], (c.x, c.y), None, "R6.13", path=pts, level=s_["z"])
             for d in cdef.get("domes", []):
                 if d.get("light") == "cove":
-                    ring = Point(d["at"]).buffer(d["d"] / 2 - 75, 48)
+                    ring = Point(d["at"]).buffer(d["d"] / 2 + 90, 48)          # ring cove round the dome
                     pts = [[round(x), round(y)] for x, y in ring.exterior.coords]
-                    self.add("lighting", "cove", r["id"], d["at"], None, "R6.13", path=pts, note=f"in dome {d.get('id')}")
+                    self.add("lighting", "cove", r["id"], d["at"], None, "R6.13", path=pts, note=f"ring cove r + 90 round dome {d.get('id')}")
             for lt in cdef.get("lights", []):
                 k = lt.get("kind")
                 if k not in PREFIX:
@@ -505,9 +666,9 @@ class Builder:
             if i["system"] == "lighting":
                 light[i["room"]].append(i)
         for sb in [i for i in self.items if i["kind"] == "switchboard"]:
-            serves = sb.get("serves", sb["room"])
-            ctl = [i["id"] for i in light.get(serves, [])]
-            ctl += [i["id"] for i in self.items if i["kind"] == "geyser_point" and i["room"] == serves]
+            serves = [sb.get("serves", sb["room"])] + sb.get("also_serves", [])
+            ctl = [i["id"] for r_ in serves for i in light.get(r_, [])]
+            ctl += [i["id"] for i in self.items if i["kind"] == "geyser_point" and i["room"] in serves]
             sb["controls"] = ctl
         for s2 in [i for i in self.items if i["kind"] == "switch_2way"]:
             s2["controls"] = [i["id"] for i in light.get(s2["room"], []) if i["kind"] == "downlight"]
@@ -540,6 +701,7 @@ class Builder:
         self.r6_5_desk()
         self.r6_6_tv()
         self.r6_7_worktop()
+        self.r6_7a_kitchen()
         self.r6_9_entry()
         self.r6_10_ac()
         self.r6_14_plumbing()
@@ -601,9 +763,134 @@ def build(root: Path) -> tuple[dict, list, list]:
             "items": items}, rep, errs
 
 
+# ------------------------------------------------------------------ review checklist (agents/services.md)
+APPLIANCE_INSIDE = {"fridge_socket", "oven_16a", "microwave_socket", "dw_socket", "chimney_point", "geyser_point",
+                    "ac_isolator", "mirror_light", "exhaust", "geyser"}
+IN_OPENING = {"exhaust"}                         # placed in its ventilator on purpose
+CIRCULATION = {"living", "dining", "living_dining", "foyer", "passage"}
+PLATE_W = {"double_socket": 146, "tv_power": 146, "db": 350, "vdp": 130, "router": 200}
+
+
+def check(m, items):
+    """The services review checklist as findings: (id, code, message, suggested move or None)."""
+    out = []
+    dev = [i for i in items if i.get("wall") and i.get("z") is not None and i["system"] in ("power", "switching",
+                                                                                         "lighting")]
+    b = Builder(m)
+
+    def t_on(w, p):
+        ux, uy, _ = geom.unit(w["a"], w["b"])
+        return (p[0] - w["a"][0]) * ux + (p[1] - w["a"][1]) * uy
+
+    def blocks(i):
+        """[(t0, t1, z0, z1, why)] on the device's wall that it must keep clear of."""
+        w = m.wall(i["wall"])
+        res = []
+        for o in (m.openings_on(w["id"]) if i["kind"] not in IN_OPENING else []):
+            if o["kind"] in ("window", "ventilator", "sliding_door"):
+                sill = o.get("sill", 0) if o["kind"] != "sliding_door" else 0
+                res.append((o["offset"], o["offset"] + o["width"], sill - 75, o.get("head", 2100) + 75,
+                            f"on window {o['id']}"))
+        for j in m.joinery:
+            if j["wall"] != w["id"] or j["room"] != i["room"]:
+                continue
+            z0, z1 = j.get("z", 0), j.get("z", 0) + j.get("height", 850)
+            if i["kind"] not in APPLIANCE_INSIDE and not (i["kind"] == "worktop_socket" and i["z"] > z1 - 60):
+                res.append((j["offset"], j["offset"] + j["width"], z0, z1, f"inside joinery {j['id']}"))
+            if j.get("kind") == "tv_unit" and i["kind"] != "tv_power":
+                c = j["offset"] + j["width"] / 2
+                res.append((c - 650, c + 650, 750, 1450, f"behind the TV over {j['id']}"))
+        stands = [f for f in m.furniture if f["room"] == i["room"] and f.get("kind") == "bedside"]
+        for wf in m.wall_features:
+            if wf["wall"] != w["id"] or wf["room"] != i["room"] or not wf.get("parent"):
+                continue
+            free = []                                            # nightstand zones (+150 beside) on this element
+            for n in stands:
+                g = geom.furniture_polygon(n)
+                if g.distance(geom.LineString([w["a"], w["b"]])) < w["t"] + 400:
+                    ts = [t_on(w, c) for c in g.exterior.coords]
+                    free.append((min(ts) - 150, max(ts) + 150, 850))
+            for j in m.joinery:                                  # TV console zone: just above the unit
+                if j["wall"] == w["id"] and j.get("kind") == "tv_unit":
+                    free.append((j["offset"], j["offset"] + j["width"], j.get("z", 0) + j.get("height", 450) + 250))
+            t_i = t_on(w, i["at"])
+            if any(a - 1 <= t_i <= bb + 1 and i["z"] <= zt for a, bb, zt in free):
+                continue
+            if i["kind"] == "tv_power" and any(j["wall"] == w["id"] and j.get("kind") == "tv_unit" for j in m.joinery):
+                continue                                         # behind the TV itself
+            res.append((wf["offset"], wf["offset"] + wf["width"], 301, wf["z1"],
+                        f"on feature artwork {wf['id']} ({wf['kind']})"))
+        return res
+
+    def clear_spot(i, extra=()):
+        w = m.wall(i["wall"])
+        t0 = t_on(w, i["at"])
+        bl = [x for x in blocks(i) if x[2] <= i["z"] <= x[3]] + list(extra)
+        f, _ = b.nearest_face(i["room"], i["at"])
+        lo = t_on(w, b.at_t(f, 0))
+        hi = t_on(w, b.at_t(f, f.length))
+        lo, hi = min(lo, hi) + 80, max(lo, hi) - 80
+        for d in range(0, 4000, 30):
+            for t in (t0 + d, t0 - d):
+                if lo <= t <= hi and not any(a - 60 < t < c + 60 for a, c, *_ in bl):
+                    p = geom.point_on_wall(w, t, geom.face_offset(w, geom.room_side_of_wall(w, m.room(i["room"]))
+                                                                  or "left"))
+                    return {"id": i["id"], "at": [round(p[0]), round(p[1])], "z": i["z"]}
+        return None
+
+    for i in dev:
+        for a, c, z0, z1, why in blocks(i):
+            t = t_on(m.wall(i["wall"]), i["at"])
+            if a < t < c and z0 <= i["z"] <= z1:
+                out.append((i["id"], "SV-CLASH", f"{i['id']} ({i['kind']}, h{i['z']}) {why}", clear_spot(i)))
+                break
+        for o in m.openings:                                     # behind a door swing
+            if o["kind"] in ("door", "double_door") and o.get("swing") in ("left", "right"):
+                sp = geom.swing_polygon(m.wall(o["wall"]), o)
+                if sp.buffer(40).contains(geom.Point(i["at"])) and i["z"] < o.get("head", 2100):
+                    out.append((i["id"], "SV-SWING", f"{i['id']} ({i['kind']}) is behind the swing of {o['id']}",
+                                clear_spot(i, [(min(t_on(m.wall(i["wall"]), c) for c in sp.exterior.coords),
+                                                max(t_on(m.wall(i["wall"]), c) for c in sp.exterior.coords), 0, 9999,
+                                                "swing")]) if m.wall(i["wall"]) else None))
+    by_wall = {}
+    for i in dev:
+        by_wall.setdefault((i["wall"], i["room"]), []).append(i)
+    for (wid, rid), lst in by_wall.items():                     # plates closer than 120
+        w = m.wall(wid)
+        lst = sorted(lst, key=lambda i: t_on(w, i["at"]))
+        for p, q in zip(lst, lst[1:]):
+            gap = abs(t_on(w, q["at"]) - t_on(w, p["at"])) - (PLATE_W.get(p["kind"], 86) + PLATE_W.get(q["kind"], 86)) / 2
+            if gap < 120 - 86 and abs(p["z"] - q["z"]) < 100:
+                s_ = clear_spot(q, [(t_on(w, p["at"]) - 206, t_on(w, p["at"]) + 206, 0, 9999, "plate")])
+                out.append((q["id"], "SV-OVERLAP", f"{q['id']} and {p['id']} plates overlap on {wid} "
+                                                   f"(h{q['z']} / h{p['z']})", s_))
+    for r in m.rooms:                       # every way in (from circulation or outside) has a switchboard near it
+        if r.get("type") in ("bath", "toilet", "balcony", "shaft"):
+            continue
+        sbs = [i for i in items if i["kind"] == "switchboard" and i["room"] == r["id"]]
+        for o in m.openings:
+            if o["kind"] not in ("door", "double_door", "opening", "sliding_door"):
+                continue
+            w = m.wall(o["wall"])
+            cut = geom.opening_polygon(w, o, 2).buffer(5)
+            if not cut.intersects(geom.room_polygon(r)):
+                continue
+            other = [x for x in m.rooms if x["id"] != r["id"] and cut.intersects(geom.room_polygon(x))]
+            entry = (not other and w.get("kind") == "external") or \
+                any(x.get("type") in CIRCULATION for x in other) and r.get("type") not in CIRCULATION
+            if not entry:
+                continue
+            c = geom.point_on_wall(w, o["offset"] + o["width"] / 2)
+            if not any(geom.Point(sb["at"]).distance(geom.Point(c)) < o["width"] / 2 + 1200 for sb in sbs):
+                out.append((o["id"], "SV-SWITCH", f"no switchboard of {r['id']} within reach of {o['id']} "
+                                                  f"(add one at its latch side h1200, or a switch spot)", None))
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="python -m atelier.services")
     ap.add_argument("path", type=Path)
+    ap.add_argument("--check", action="store_true", help="review checklist findings (agents/services.md)")
     a = ap.parse_args(argv)
     roots = [a.path] if (a.path / "survey.json").exists() else sorted(p.parent for p in a.path.glob("*/survey.json"))
     bad = 0
@@ -621,6 +908,13 @@ def main(argv=None):
         for e in errs:
             print(f"  ERROR {e}")
         bad += len(errs)
+        if a.check:
+            fs = check(load(root), data["items"])
+            for pid, code, msg, mv in fs:
+                print(f"  {code:10} {msg}")
+                if mv:
+                    print(f"             suggest move: {json.dumps(mv)}")
+            print(f"  check: {len(fs)} finding(s)" + ("" if fs else " ✓"))
     return 1 if bad else 0
 
 

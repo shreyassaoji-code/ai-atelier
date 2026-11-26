@@ -38,6 +38,42 @@ for j in m.joinery:
         o += md["w"]
 
 fans = {i["room"]: Point(i["at"]) for i in by("fan")}
+def _slots_opposite():
+    """Each slot runs parallel to, and on the far side from, its room's feature wall."""
+    from atelier import features as FT
+    ok = True
+    for g in m.feature_walls:
+        sg = next((i for i in by("supply_grille") if i["room"] == g["room"]), None)
+        if not sg:
+            return False
+        L, P = FT.wall_u(m, g)
+        line = LineString([P(0), P(L)])
+        a, b = (Point(p) for p in sg["path"])
+        ok &= abs(line.distance(a) - line.distance(b)) < 5 and line.distance(a) > 1500
+    return ok
+
+
+def _dome_ring():
+    d = next(c for c in m.ceilings if c.get("domes"))["domes"][0]
+    cv = next(i for i in by("cove") if "dome" in (i.get("note") or ""))
+    return all(abs(Point(p).distance(Point(d["at"])) - (d["d"] / 2 + 90)) < 3 for p in cv["path"])
+
+
+def _check_finds():
+    import copy as _c
+    from atelier.services import check
+    if check(m, S):
+        return False
+    bad = _c.deepcopy(S)
+    wk = next(i for i in bad if i["kind"] == "worktop_socket" and i["wall"] == "X2")
+    wk["at"] = [11170, 6200]                       # onto window W6
+    sk = [i for i in bad if i["kind"] == "socket" and i["room"] == "LD"][0]
+    twin = dict(sk, id="SK-LD-99")                 # a second plate on top of the first
+    bad.append(twin)
+    codes = {c for _, c, _, _ in check(m, bad)}
+    return {"SV-CLASH", "SV-OVERLAP"} <= codes
+
+
 def _split_without_feature():
     from atelier.model import load as _load
     from atelier.services import Builder as _B
@@ -57,7 +93,22 @@ checks = [
     ("R6.4 one 2-way h750 per bedside", all(i["z"] == 750 for i in by("switch_2way"))
      and len(by("switch_2way")) == sum(f["kind"] == "bedside" for f in m.furniture)),
     ("R6.5 desk LAN h850", any(i["z"] == 850 for i in by("lan"))),
-    ("R6.6 TV power + LAN h1100", by("tv_power") and all(i["z"] == 1100 for i in by("tv_power"))),
+    ("R6.6 TV h1100; power, LAN, media h550", by("tv_power") and all(i["z"] == 1100 for i in by("tv_power"))
+     and {i["z"] for i in S if i.get("rule") == "R6.6" and i["kind"] in ("double_socket", "lan", "media")} == {550}
+     and len(by("media")) == 1),
+    ("R6.7a chimney h2200 over the hob, RO beside the sink", all(i["z"] == 2200 for i in by("chimney_point"))
+     and len(by("chimney_point")) == 1 and len(by("ro_point")) == 1),
+    ("R6.7a fridge, oven 16A, microwave, DW (+ water, drain) present; defaults flagged",
+     all(len(by(k)) == 1 for k in ("fridge_socket", "oven_16a", "microwave_socket", "dw_socket"))
+     and all(i.get("flag") for k in ("fridge_socket", "oven_16a", "microwave_socket", "dw_socket") for i in by(k))
+     and sum(1 for i in S if i.get("note") in ("dishwasher inlet", "dishwasher drain")) == 2),
+    ("R6.8 mirror light per vanity; balcony IP44 + WM floor trap", len(by("mirror_light")) == 2
+     and any(i["room"] == "BAL" for i in by("ip44_socket")) and any(i["room"] == "BAL" for i in by("floor_trap"))),
+    ("R6.9 DB h1800, VDP h1450", by("db")[0]["z"] == 1800 and by("vdp")[0]["z"] == 1450),
+    ("R6.10 slot diffuser in the band opposite the feature wall", _slots_opposite()),
+    ("R6.11 living fan over the seating rug", next(i for i in by("fan") if i["room"] == "LD")["at"] == [1550, 2350]),
+    ("R6.13 ring cove r + 90 round the dome", _dome_ring()),
+    ("R6.16 review check: sample clean, a socket on a window and overlapping plates are found", _check_finds()),
     ("R6.7 worktop h1100, >=150 from sink/hob", all(i["z"] == 1100 for i in by("worktop_socket")) and not near),
     ("R6.8 wet power/lighting IP44", all(i.get("ip") == "IP44" for i in S if i["room"] in wet
                                          and i["system"] in ("power", "lighting"))),

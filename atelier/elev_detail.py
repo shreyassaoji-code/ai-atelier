@@ -26,7 +26,10 @@ D = dict(plinth=100, worktop=30, drawer_top=180, gap=3, slab=150, floor_slab=100
                 "socket_usb": (86, 86, "USB"), "lan": (86, 86, "DATA"), "tv_power": (146, 86, "TV"),
                 "ip44_socket": (100, 110, "IP44"), "wm_socket": (100, 110, "16A IP44"),
                 "geyser_point": (100, 110, "16A IP44"), "ac_isolator": (86, 86, "20A"), "db": (350, 450, "DB"),
-                "vdp": (130, 200, "VDP"), "router": (200, 150, "RTR"), "switch_2way": (86, 86, "2W")},
+                "vdp": (130, 200, "VDP"), "router": (200, 150, "RTR"), "switch_2way": (86, 86, "2W"),
+                "media": (86, 86, "MEDIA"), "fridge_socket": (86, 86, "FRG"), "oven_16a": (100, 110, "16A OV"),
+                "microwave_socket": (86, 86, "MW"), "dw_socket": (100, 110, "16A DW"), "chimney_point": (86, 86, "CHM"),
+                "ro_point": (86, 86, "RO"), "mirror_light": (450, 60, "MIRROR LT")},
          pipe={"cold": (30, "C"), "hot": (30, "H"), "waste": (50, "D"), "soil": (110, "WC")})
 BUBBLE_SHEET = {1: "DT-01", 2: "DT-01", 3: "DT-01", 4: "DT-02", 5: "DT-02", 6: "DT-02"}
 
