@@ -36,7 +36,10 @@ class Model:
     infills: list = field(default_factory=list)          # {"id", "wall", "poly"}: openings closed up
     voids: list = field(default_factory=list)            # removed wall stretches (act as openings)
     rooms_survey: list = field(default_factory=list)
-    design_raw: dict = field(default_factory=dict)
+    design_raw: dict = field(default_factory=dict)       # design in engine schema (after atelier/vocab.py)
+    design_brief: dict = field(default_factory=dict)     # design file as written
+    extras: dict = field(default_factory=dict)           # palette, style, summary, switch_spots (brief)
+    override_errors: list = field(default_factory=list)
 
     # ---- lookups
     def wall(self, wid):
@@ -134,7 +137,10 @@ def load(root, design: str | None | bool = None) -> Model:
         dpath = Path(design)
     if not dpath.exists():
         return m
-    ds = _read(dpath)
+    from atelier import vocab
+    brief = _read(dpath)
+    ds, m.extras = vocab.normalise(brief, {r["id"]: geom.room_polygon(r) for r in m.rooms if r.get("poly")})
+    m.design_brief = brief
     m.design_raw = ds
     m.sources.append(dpath.name)
     dff = ds.get("flag") is True
@@ -180,6 +186,12 @@ def load(root, design: str | None | bool = None) -> Model:
 
     m.walls += [dict(w, _new=True) for w in copy.deepcopy(ds.get("new_walls", []))]
     m.openings += [dict(o, _new=True) for o in copy.deepcopy(ds.get("new_openings", []))]
+    for ov in ds.get("opening_overrides", []):              # change an existing opening in place
+        o = next((x for x in m.openings if x["id"] == ov.get("id")), None)
+        if o is None:
+            m.override_errors.append(f"opening_overrides: no opening {ov.get('id')!r}")
+            continue
+        o.update({k: v for k, v in copy.deepcopy(ov).items() if k != "id"}, _changed=True)
     for r in ds.get("rooms", []):
         cur = m.room(r["id"])
         if cur:

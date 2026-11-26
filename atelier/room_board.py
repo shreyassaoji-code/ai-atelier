@@ -276,8 +276,18 @@ def _furniture_elev(C, f, xa, xb, frontal):
     fab, cus, oak, wood, lin_ = (TX.hexc(pal[n]) for n in ("fabric", "cushion", "oak", "wood", "linen"))
     R = lambda a, b, za, zb, fill: C.rect(a, b, za, zb, fill=fill, edge=T.INK, lw=LW_THIN, z=8)  # noqa: E731
     W = xb - xa
+    if f.get("finish") == "velvet":
+        fab = TX.hexc(pal["velvet"])
+        cus = cus if k == "bed" else TX.hexc(pal["velvet"])
+    elif f.get("finish") == "marble":
+        oak = TX.hexc(pal["marble"])
     if k == "bed":
-        R(xa, xb, 80, 300, TX.hexc(pal["fabric_dk"]))
+        if f.get("headboard") == "curved" and frontal:          # arched upholstered headboard behind
+            hb = TX.hexc(pal["velvet_dk"] if f.get("finish") == "velvet" else pal["fabric_dk"])
+            pts = [(C.X(xa - 20 + (W + 40) * t), C.Z(1030 + 120 * (1 - (2 * t - 1) ** 2))) for t in np.linspace(0, 1, 25)]
+            C.sh.region([([(C.X(xa - 20), C.Z(300))] + pts + [(C.X(xb + 20), C.Z(300))], [])], fill=hb, edge=T.INK,
+                        lw=LW_THIN, z=7.5)
+        R(xa, xb, 80, 300, TX.hexc(pal["velvet_dk" if f.get("finish") == "velvet" else "fabric_dk"]))
         R(xa + 15, xb - 15, 300, h, lin_)
         if frontal:
             for a, b in ((xa + 60, xa + W / 2 - 30), (xa + W / 2 + 30, xb - 60)):
@@ -317,9 +327,16 @@ def _furniture_elev(C, f, xa, xb, frontal):
         R(xa, xb, 60, h, oak)
         C.line([(xa + 20, h - 160), (xb - 20, h - 160)], T.INK, LW_HAIR, z=9)
         mid = (xa + xb) / 2
-        R(mid - 8, mid + 8, h, h + 300, TX.hexc(pal["metal"]))
-        C.sh.region([([(C.X(mid - 150), C.Z(h + 300)), (C.X(mid + 150), C.Z(h + 300)), (C.X(mid + 120), C.Z(h + 520)),
-                       (C.X(mid - 120), C.Z(h + 520))], [])], fill=lin_, edge=T.INK, lw=LW_THIN, z=8)
+        if f.get("lamp"):
+            R(mid - 8, mid + 8, h, h + 300, TX.hexc(pal["metal"]))
+            C.sh.region([([(C.X(mid - 150), C.Z(h + 300)), (C.X(mid + 150), C.Z(h + 300)),
+                           (C.X(mid + 120), C.Z(h + 520)), (C.X(mid - 120), C.Z(h + 520))], [])],
+                        fill=lin_, edge=T.INK, lw=LW_THIN, z=8)
+    elif k == "bench":
+        for x in (xa + 30, xb - 70):
+            R(x, x + 40, 0, 180, wood)
+        R(xa, xb, 180, h - 60, fab)
+        R(xa + 10, xb - 10, h - 60, h, cus)
     elif k == "plant":
         mid = (xa + xb) / 2
         r = W / 2

@@ -400,11 +400,21 @@ def board(m, no, total, jid):
     fin = {f["code"]: f for f in m.finishes}
     fr.head("Materials")
     mats = []
-    for code in (j.get("finish"), j.get("worktop")):
-        if code in fin:
-            mats.append((code, fin[code]["name"], None))
-    mats.append(("H", {"gola": "Gola J-profile, aluminium, 30 × 50", "bar": "Bar handles, brushed steel",
-                       "knob": "Knobs", "push": "Push-to-open"}[j.get("handles", "bar")], None))
+    jm = j.get("materials") or {}
+    pairs = list(jm.items()) if isinstance(jm, dict) else [(None, c) for c in jm]
+    seen = set()
+    for role, code in pairs + [("worktop", j.get("worktop")), (None, j.get("finish"))]:
+        if code in fin and code not in seen:
+            seen.add(code)
+            mats.append((code, (f"{role}: " if role else "") + fin[code]["name"], None))
+    for p in j.get("parts", []):                            # the designer's part list
+        code = p.get("code") or p.get("material")
+        size = "×".join(str(v) for v in p.get("size", [])) if p.get("size") else ""
+        mats.append((code or "·", " ".join(x for x in (p.get("name") or p.get("part", ""), size,
+                                                         f"×{p['qty']}" if p.get("qty") else "") if x), None))
+    if not any(str(c).startswith("HW") for c, _, _ in mats):
+        mats.append(("H", {"gola": "Gola J-profile, aluminium, 30 × 50", "bar": "Bar handles, brushed steel",
+                           "knob": "Knobs", "push": "Push-to-open"}[j.get("handles", "bar")], None))
     fr.lines(mats, indent=9, max_chars=52)
     fr.y += 1
     fr.head("Modules")
@@ -419,9 +429,10 @@ def board(m, no, total, jid):
     sums = "; ".join(f"row {r}: Σ {a} = run {b} ✓" for r, a, b in it.sums)
     face_note = f"Run {it.W} on a {round(it.F.L)} wall face." if it.W <= it.F.L + 1 else \
         f"Run {it.W} is longer than the {round(it.F.L)} wall face!"
-    fr.lines([("1", sums, None), ("2", face_note, None),
-              ("3", "Carcass 18 BWP ply, 6 back, plinth 100 recessed 60; soft-close hinges and full-extension "
-                    "runners.", None),
-              ("4", "Internal fit is the Atelier default (STANDARDS JB5b.5): confirm with the client.", None)],
-             max_chars=52)
+    own = [n if isinstance(n, str) else n.get("text", "") for n in j.get("notes", [])]
+    std = [sums, face_note]
+    if not own:
+        std += ["Carcass 18 BWP ply, 6 back, plinth 100 recessed 60; soft-close hinges and full-extension runners.",
+                "Internal fit is the Atelier default (STANDARDS JB5b.5): confirm with the client."]
+    fr.lines([(str(i), t, None) for i, t in enumerate(own + std, 1)], max_chars=52)
     return sh

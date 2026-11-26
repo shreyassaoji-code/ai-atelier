@@ -36,7 +36,7 @@ from atelier.model import load
 
 R = dict(size=600, samples=48, threshold=0.03, bounces=6, exposure=1.25,
          sun=(4.0, 35, 315), sky=2.2, downlight_w=14, cove_strength=5.0, pendant_w=25,
-         parapet=1050, worktop=40, plinth=100, overhang=20, gap=3, front=18, trough=150, lip=75)
+         parapet=1050, worktop=30, plinth=100, overhang=20, gap=3, front=18, trough=150, lip=75)
 
 
 def lin(c):
@@ -516,6 +516,12 @@ class Scene:
         fab = self.mat("fabric", color=P["fabric"], rough=0.95, sheen=True)
         cus = self.mat("cushion", color=P["cushion"], rough=0.95, sheen=True)
         oak = self.mat("oak", color=P["oak"], rough=0.5, grain=True)
+        if f.get("finish") == "velvet":                     # look-defining options (agents/designer.md)
+            fab = self.mat("velvet", color=P["velvet"], rough=0.7, sheen=True)
+            if k != "bed":                                  # a velvet bed keeps its bedding
+                cus = self.mat("velvet_cus", color=P["velvet"], rough=0.7, sheen=True)
+        elif f.get("finish") == "marble":
+            oak = self.mat("marble_top", color=P["marble"], rough=0.15)
         wood = self.mat("wood", color=P["wood"], rough=0.5)
         lin_ = self.mat("linen", color=P["linen"], rough=0.95, sheen=True)
         B = self.mesh.frame_box
@@ -558,10 +564,20 @@ class Scene:
             B(fab, F, -hw, hw, -hd, hd, 440, 480)
             B(wood, F, -hw + 20, hw - 20, -hd + 10, -hd + 40, 480, h)
         elif k == "bed":
-            dk = self.mat("fabric_dk", color=P["fabric_dk"], rough=0.95, sheen=True)
+            dk = self.mat("velvet_dk", color=P["velvet_dk"], rough=0.7, sheen=True) if f.get("finish") == "velvet" \
+                else self.mat("fabric_dk", color=P["fabric_dk"], rough=0.95, sheen=True)
             throw = self.mat("throw", color=P["throw"], rough=0.95, sheen=True)
             B(wood, F, -hw + 40, hw - 40, -hd + 40, hd - 40, 0, 80)
             B(dk, F, -hw, hw, -hd, hd, 80, 300)
+            if f.get("headboard") == "curved":
+                hb = self.mat("velvet_dk", color=P["velvet_dk"], rough=0.7, sheen=True) \
+                    if f.get("finish") == "velvet" else dk
+                n = 16
+                for i in range(n):                          # arc of upholstered staves
+                    a0, a1 = -hw - 20 + i * (w + 40) / n, -hw - 20 + (i + 1) * (w + 40) / n
+                    xm = (a0 + a1) / 2 / (hw + 20)
+                    v0 = -hd - 10 + 90 * (1 - xm ** 2)
+                    B(hb, F, a0 + 2, a1 - 2, v0 - 90, v0, 0, 1150 - 120 * xm ** 2)
             B(lin_, F, -hw + 15, hw - 15, -hd + 15, hd - 15, 300, h)
             B(lin_, F, -hw - 5, hw + 5, -hd + 520, hd + 5, h - 80, h + 25)
             B(throw, F, -hw - 8, hw + 8, hd - 520, hd - 180, h + 25, h + 40)
@@ -573,9 +589,17 @@ class Scene:
             B(wood, F, -hw + 20, hw - 20, -hd + 20, hd - 20, 0, 60)
             B(self.mat("shadow", color=TX.mix(T.GREY, T.INK, 0.6), rough=0.7), F, -hw + 20, hw - 20, hd, hd + 1,
               h - 160, h - 156)
-            self.mesh.disc(self.mat("metal", color=P["metal"], rough=0.3, metal=0.9), F[0], 60, h, h + 320, seg=16)
-            shade = self.mat("shade", color=P["linen"], rough=0.9, emit=TX.mix(T.AMBER, T.PAPER, 0.7), strength=0.45)
-            self.mesh.disc(shade, F[0], 150, h + 300, h + 520, seg=28)
+            if f.get("lamp"):
+                self.mesh.disc(self.mat("metal", color=P["metal"], rough=0.3, metal=0.9), F[0], 60, h, h + 320, seg=16)
+                shade = self.mat("shade", color=P["linen"], rough=0.9, emit=TX.mix(T.AMBER, T.PAPER, 0.7),
+                                 strength=0.45)
+                self.mesh.disc(shade, F[0], 150, h + 300, h + 520, seg=28)
+        elif k == "bench":
+            for su in (-hw + 30, hw - 70):
+                for sv in (-hd + 30, hd - 70):
+                    B(wood, F, su, su + 40, sv, sv + 40, 0, 180)
+            B(fab, F, -hw, hw, -hd, hd, 180, h - 60)
+            B(cus, F, -hw + 10, hw - 10, -hd + 10, hd - 10, h - 60, h)
         elif k == "rug":
             rb = self.mat("rug_border", color=P["rug_border"], rough=1.0)
             rg = self.mat("rug", color=P["rug"], rough=1.0, sheen=True)

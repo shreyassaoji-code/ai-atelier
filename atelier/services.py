@@ -512,12 +512,29 @@ class Builder:
         for s2 in [i for i in self.items if i["kind"] == "switch_2way"]:
             s2["controls"] = [i["id"] for i in light.get(s2["room"], []) if i["kind"] == "downlight"]
 
+    def switch_spots(self):
+        """Designer's switch_spots (open rooms): a switchboard at each spot, on the nearest wall face,
+        replacing the rule's switchboards in that room."""
+        spots = (getattr(self.m, "extras", {}) or {}).get("switch_spots") or []
+        rooms = {s["room"] for s in spots if s.get("room") in self.faces}
+        if not rooms:
+            return
+        self.items = [i for i in self.items if not (i["kind"] == "switchboard" and i["room"] in rooms)]
+        for r in rooms:
+            self.count[(PREFIX["switchboard"], r)] = 0
+        for s in spots:
+            if s.get("room") not in self.faces:
+                continue
+            f, t = self.nearest_face(s["room"], s["at"])
+            self.wall_device("switching", "switchboard", s["room"], f, t, s.get("z", 1200), "design")
+
     def run(self):
         self.r6_11_fans()                 # fans first: downlights keep clear of them
         self.r6_12_downlights()
         self.r6_13_cove()
         self.r6_8_wet()
         self.r6_1_switches()
+        self.switch_spots()
         self.r6_3_sockets()
         self.r6_4_bedside()
         self.r6_5_desk()

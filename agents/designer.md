@@ -26,3 +26,20 @@ Create one complete interior concept for the apartment in `survey.json`, followi
 * `python -m atelier.validate projects/<name> --design design_<X>.json` → 0 errors; fix warnings unless intentional (say why).
 * `python -m atelier.preview projects/<name> design_<X>.json` → look at the layout and ceiling PNGs; fix anything that looks wrong.
 * Reply with: concept name, 3 key moves, open issues.
+
+---
+
+### How the brief's words become data (SCHEMA §2b, `atelier/vocab.py`)
+
+| Brief says | In design_<X>.json |
+|---|---|
+| tray `steps` (band, level) + `core_h` | `{"room": "MBR", "type": "tray", "steps": [{"band": 450, "z": 2550}, {"band": 450, "z": 2650}], "core_h": 2720}`: bands from the perimeter in; each level at least 150 below the slab |
+| living tray `area`, dining dome `features` | `"area": [[x, y], …]` (tray polygon inside the room), `"features": [{"kind": "dome", "at": [x, y], "d": 1500, "z": 2900}]` |
+| `tracks` | `"tracks": [[[x, y], [x, y]]]` (paths), on tray or flat ceilings |
+| `opening_overrides` | `[{"id": "W1", "width": 1800}]`: fields replace those of the existing opening |
+| `load` walls | `"kind": "load"` in the survey; demolishing one (or an external wall) fails validation |
+| curved headboard, velvet / marble, lamp, bed bench | `"headboard": "curved"`, `"finish": "velvet"`, `"lamp": true` on a `nightstand`, `{"kind": "bench", …}` |
+| `MB-*` + `HW` codes, `parts`, `notes` | `"materials": {"carcass": "MB-1", "shutter": "MB-2", "hardware": "HW-1"}`, `"parts": [{"name", "code", "size", "qty"}]`, `"notes": ["…"]`; every code defined in `finish_materials` |
+| kitchen camera wall | `"views": [{"room": "KIT", "wall": "X2"}]` |
+| colours (palette, materials) | **names**, never colour values (`CLAUDE.md`): `"palette": ["bone", "warm oak", "deep olive", "brushed brass"]`, `"colour": "smoked walnut"` |
+| feature-wall item types | `wall_features[].kind` from SCHEMA §3 (`agents/reference.md` is not written yet) |

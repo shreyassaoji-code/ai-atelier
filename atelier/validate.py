@@ -29,7 +29,7 @@ NEEDS_LIGHT = {"living", "dining", "living_dining", "kitchen", "bedroom", "maste
 SOFT = {"rug"}  # furniture that may sit under other furniture
 
 ENUMS = {
-    ("walls", "kind"): {"external", "internal", "partition", "parapet", "glass", "half"},
+    ("walls", "kind"): {"external", "internal", "load", "partition", "parapet", "glass", "half"},
     ("walls", "align"): {"centre", "left", "right"},
     ("openings", "kind"): {"door", "double_door", "sliding_door", "opening", "window", "ventilator"},
     ("openings", "swing"): {"left", "right", "none"},
@@ -38,7 +38,7 @@ ENUMS = {
                         "bath", "toilet", "utility", "balcony", "foyer", "passage", "study", "puja",
                         "store", "dress", "shaft"},
     ("furniture", "kind"): {"sofa", "armchair", "coffee_table", "side_table", "dining_table", "chair",
-                            "bed", "bedside", "desk", "rug", "console", "tv", "plant", "other"},
+                            "bed", "bedside", "bench", "desk", "rug", "console", "tv", "plant", "other"},
     ("sanitary", "kind"): {"wc", "shower", "bathtub", "washing_machine"},
     ("joinery", "kind"): {"wardrobe", "tv_unit", "kitchen_base", "kitchen_wall", "tall_unit", "vanity",
                           "shoe_rack", "crockery", "study_unit", "bookshelf", "puja_unit", "other"},
@@ -106,6 +106,13 @@ def check(m: Model) -> Report:
                 R.E("E-REF", f"{k} {o['id']} in unknown room {o.get('room')!r}")
             if k == "joinery" and not m.wall(o.get("wall")):
                 R.E("E-REF", f"joinery {o['id']} on unknown wall {o.get('wall')!r}")
+    # ---- structure: external and load-bearing walls are never removed -----------
+    kinds = {w["id"]: w.get("kind") for w in m.survey_walls}
+    for d in m.demolished:
+        if d["kind"] == "wall" and kinds.get(d["id"]) in ("external", "load"):
+            R.E("E-DEMOLISH-STRUCT", f"wall {d['id']} is {kinds[d['id']]}: it may not be demolished")
+    for e in m.override_errors:
+        R.E("E-REF", e)
     if R.errors:
         return R  # geometry checks need valid references
 
@@ -217,6 +224,22 @@ def check(m: Model) -> Report:
     for r in m.rooms:
         if r.get("wall_finish") and r["wall_finish"] not in codes:
             R.E("E-FINISH", f"room {r['id']}: unknown wall finish {r['wall_finish']!r}")
+    for j in m.joinery:                                     # board, worktop and hardware codes
+        mats = j.get("materials") or {}
+        used = list(mats.values()) if isinstance(mats, dict) else list(mats)
+        used += [j.get("finish"), j.get("worktop")] + [p.get("code") or p.get("material") for p in j.get("parts", [])]
+        for c in used:
+            if c and c not in codes:
+                R.E("E-FINISH", f"joinery {j['id']}: unknown material code {c!r}")
+    from atelier.texture import named_tone
+    for f in m.finishes:
+        if f.get("tone") and named_tone(f["tone"]) is None:
+            R.W("W-TONE", f"finish {f['code']}: colour {f['tone']!r} has no known tone word; drawn in its kind's tone")
+    for t in (m.extras.get("palette") or []):
+        name = t.get("name") if isinstance(t, dict) else t
+        if named_tone(name) is None:
+            R.W("W-TONE", f"palette colour {name!r} has no known tone word")
+
 
     # ---- ceilings ---------------------------------------------------------------
     soffit = m.levels.get("soffit")
@@ -246,9 +269,20 @@ def check(m: Model) -> Report:
         for lt in c.get("lights", []):
             if lt.get("kind") not in light_kinds:
                 R.E("E-ENUM", f"ceiling {r['id']}: light kind {lt.get('kind')!r}")
+        tray = max([z for z in zs if z is not None], default=None)
+        if soffit and tray and tray > soffit - 150:
+            R.E("E-CEIL", f"ceiling {r['id']}: +{tray} leaves < 150 below the slab soffit +{soffit} (STANDARDS §3)")
         top = max([z for z in zs if z is not None] + [d["z"] for d in c.get("domes", [])], default=None)
         if soffit and top and top > soffit - 50:
             R.E("E-CEIL", f"ceiling {r['id']}: +{top} leaves < 50 below the slab soffit +{soffit}")
+    for c in m.design_brief.get("ceilings", []):            # the brief's tray rules
+        if c.get("type") == "tray":
+            n = len(c.get("steps", []))
+            if not 1 <= n <= 2:
+                R.W("W-CEIL", f"ceiling {c.get('room')}: tray with {n} steps (brief: 1-2)")
+            for st in c.get("steps", []):
+                if not 350 <= st.get("band", 450) <= 600:
+                    R.W("W-CEIL", f"ceiling {c.get('room')}: band {st.get('band')} outside 350-600 (brief)")
     for v in m.views:
         if v.get("kind") == "section":
             ln = v.get("line")

@@ -52,13 +52,51 @@ def palette():
         "worktop":    mix(T.LIGHT, T.PAPER, 0.20),
         "joinery":    mix(T.LIGHT, T.AMBER, 0.18),
         "metal":      mix(T.GREY, T.PAPER, 0.35),
+        "velvet":     mix(T.GREEN, T.INK, 0.38),
+        "velvet_dk":  mix(T.GREEN, T.INK, 0.55),
     }
+
+
+# Colour NAMES -> theme tokens (designers name colours; no colour values outside theme.py).
+# The first base word found sets the tone; modifiers then shift it. Unknown -> None.
+TONE_BASE = [
+    (("white", "ivory", "bone", "alabaster", "chalk", "snow"), lambda: mix(T.PAPER, T.LIGHT, 0.10)),
+    (("cream", "linen", "oat", "ecru", "parchment"), lambda: mix(T.PAPER, T.AMBER, 0.12)),
+    (("beige", "sand", "greige", "taupe", "mushroom", "stone", "travertine"), lambda: mix(T.LIGHT, T.AMBER, 0.18)),
+    (("marble",), lambda: palette()["marble"]),
+    (("grey", "gray", "ash", "concrete", "cement", "smoke", "pewter"), lambda: rgb(T.MID)),
+    (("charcoal", "graphite", "black", "ink", "onyx", "espresso"), lambda: mix(T.INK, T.GREY, 0.20)),
+    (("oak", "honey", "natural", "teak", "maple", "ash wood"), lambda: palette()["oak"]),
+    (("walnut", "smoked", "wenge", "mocha", "chocolate"), lambda: palette()["oak_dark"]),
+    (("brass", "bronze", "gold", "champagne", "copper"), lambda: mix(T.AMBER, T.GREY, 0.25)),
+    (("terracotta", "rust", "clay", "cognac", "tan", "caramel"), lambda: mix(T.AMBER, T.INK, 0.22)),
+    (("sage", "olive", "green", "moss", "emerald", "forest", "eucalyptus"), lambda: mix(T.GREEN, T.PAPER, 0.25)),
+    (("blue", "navy", "denim", "indigo", "slate", "teal", "petrol"), lambda: mix(T.BLUE, T.PAPER, 0.25)),
+    (("blush", "rose", "pink", "dusty"), lambda: mix(T.AMBER, T.PAPER, 0.62)),
+]
+TONE_MOD = [(("light", "pale", "soft"), T.PAPER, 0.40), (("dark", "deep", "rich"), T.INK, 0.35),
+            (("warm",), T.AMBER, 0.08), (("cool",), T.BLUE, 0.08), (("muted", "dusty"), T.MID, 0.20)]
+
+
+def named_tone(name):
+    """A colour name ("warm oak", "deep olive", "bone") as RGB mixed from theme tokens, or None."""
+    words = str(name or "").lower().replace("-", " ").split()
+    text = " ".join(words)
+    base = next((fn() for keys, fn in TONE_BASE if any(k in words or (" " in k and k in text) for k in keys)), None)
+    if base is None:
+        return None
+    for keys, tok, t in TONE_MOD:
+        if any(k in words for k in keys):
+            base = mix(base, tok, t)
+    return np.clip(base, 0, 1)
 
 
 def finish_tone(f: dict) -> np.ndarray:
     """One flat tone for a finish (swatch fallback, render base colour). Rules, not per-code colours."""
     pal = palette()
     kind, name = f.get("kind", ""), (f.get("name") or "").lower()
+    if f.get("tone") is not None and named_tone(f["tone"]) is not None:
+        return named_tone(f["tone"])
     if kind == "paint":
         return mix(T.LIGHT, T.AMBER, 0.12) if "lime" in name else mix(T.PAPER, T.LIGHT, 0.12)
     if kind in ("wood", "veneer"):
@@ -230,6 +268,16 @@ def marble(bounds, k, slab=(800, 1600), angle=0.0, seed=4, origin=(0, 0)):
 
 
 def floor_texture(finish: dict, floor: dict, bounds, k, seed=0):
+    """Pick the material from finish kind + floor pattern; a named `tone` re-tints it."""
+    img = _floor_texture(finish, floor, bounds, k, seed)
+    tone = named_tone(finish.get("tone")) if finish.get("tone") else None
+    if tone is None:
+        return img
+    mean = img.reshape(-1, 3).mean(axis=0)
+    return np.clip(img * (tone / np.maximum(mean, 1e-3)), 0, 1)
+
+
+def _floor_texture(finish: dict, floor: dict, bounds, k, seed=0):
     """Pick the material from finish kind + floor pattern (agents/SCHEMA.md enums)."""
     kind = finish.get("kind", "tile")
     pattern = floor.get("pattern", "straight")

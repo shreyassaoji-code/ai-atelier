@@ -143,6 +143,7 @@ Source: brief of 2026-11-25. Values marked **(default)** are Atelier defaults, n
 | C3.9 | A **1:5** cove detail: RCC slab, suspension rod, GI channel, 12.5 gypsum board, upstand lip, aluminium LED profile with diffuser; dimensioned trough and step heights. |
 | C3.10 | Cove geometry **(default)**: trough **150** wide on the raised side of the step edge; upstand **75** or half the step, whichever is less; board **12.5**; GI ceiling section @ **450** c/c; rods @ **1200** c/c; slab **150**; LED **24 V, 2700 K** in aluminium profile with opal diffuser. |
 | C3.11 | The slab soffit comes from `levels.soffit`; when flagged it prints with `*` on both sheets. |
+| C3.12 | Every false-ceiling level (base, steps, core) is at least **150** below the slab soffit (`E-CEIL`); domes may rise to 50 below. Trays have **1–2** steps with bands **350–600** (designer brief; `W-CEIL` otherwise). Bedrooms, living/dining and foyer get a tray; baths and kitchen are flat. |
 
 ## 5. Elevation detail (1:25)
 
@@ -156,7 +157,7 @@ Source: brief of 2026-11-25. No reference sheet received yet: layout to be match
 | E5.4 | Each point dimensioned **twice**: height from FFL to its centre, and a chain from the left corner. |
 | E5.5 | A red (`FLAG`) wiring drop from the false ceiling to every electrical point. |
 | E5.6 | Material tags with leaders: wall finish `WFn`, feature wall `FWn`, joinery board `MBn`, worktop `WTn`, floor `FL-n`. |
-| E5.7 | Joinery modules numbered `J<n>.<module>` in data order; shutters show the swing (dashed, apex at the hinge), drawers their fronts, plinth **100** and worktop **40** **(default)**; sinks show bowl and mixer, hobs and appliances their outline. |
+| E5.7 | Joinery modules numbered `J<n>.<module>` in data order; shutters show the swing (dashed, apex at the hinge), drawers their fronts, plinth **100** and worktop **30** (designer brief: plinth 100 + base 750 + worktop 30); sinks show bowl and mixer, hobs and appliances their outline. |
 | E5.8 | Vertical code rail (height zones) and horizontal code rail (zones along the wall); finish key with swatches of every code on the sheet. |
 | E5.9 | Level markers in metres: `FFL ±0.000`, `FCL +x.xxx`, `SOFFIT +x.xxx` (flagged with `*` when unverified). |
 | E5.10 | Skirting drawn **only** on bare wall (not behind joinery, not across openings), at the floor's `skirting` height. |

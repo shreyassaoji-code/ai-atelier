@@ -21,7 +21,7 @@ from atelier.sheets_services import load_services
 
 S = 25                                       # 1:25
 # STANDARDS E5.2 / E5.7 defaults (the only place these numbers live)
-D = dict(plinth=100, worktop=40, drawer_top=180, gap=3, slab=150, floor_slab=100, gola_h=50,
+D = dict(plinth=100, worktop=30, drawer_top=180, gap=3, slab=150, floor_slab=100, gola_h=50,
          plate={"socket": (86, 86, "6A"), "worktop_socket": (86, 86, "16A"), "double_socket": (146, 86, "6A×2"),
                 "socket_usb": (86, 86, "USB"), "lan": (86, 86, "DATA"), "tv_power": (146, 86, "TV"),
                 "ip44_socket": (100, 110, "IP44"), "wm_socket": (100, 110, "16A IP44"),

@@ -67,9 +67,12 @@ def key_walls(m, room):
     faces = _faces(m, room)
     named = next((v.get("walls") for v in m.views if v.get("kind") == "room_board" and v.get("room") == room["id"]
                   and v.get("walls")), None)
-    if named:
+    chosen = []
+    if named:                                            # data first (a camera wall may name only one)
         by = {f.wall: f for f in faces}
-        return [by[w] for w in named if w in by][:2]
+        chosen = [by[w] for w in named if w in by][:2]
+        if len(chosen) == 2:
+            return chosen
     scored = [(f, wall_content(m, room, f)) for f in faces]
     scored = [(f, c) for f, c in scored if not is_blank(c)]
     if room.get("type") == "kitchen":
@@ -78,7 +81,7 @@ def key_walls(m, room):
         order = jw + rest
     else:
         order = sorted(scored, key=lambda t: (-_score(t[1]), -t[0].length))
-    return [f for f, _ in order[:2]]
+    return (chosen + [f for f, _ in order if f not in chosen])[:2]
 
 
 def elevation_view(room, f, k):

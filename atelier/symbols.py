@@ -111,6 +111,11 @@ def furniture_parts(f):
         P.append((_circ(0, 0, r * 0.55), "inner"))
     elif k == "bed":
         P.append((_rr(-A, -B, A, B, 40), "wood"))
+        if f.get("headboard") == "curved":                  # upholstered, curved front edge
+            from shapely.geometry import Polygon as _Poly
+            xs = [(-A + 2 * A * i / 24) for i in range(25)]
+            front = [(x, -B + 70 + 70 * (1 - (x / A) ** 2)) for x in xs]
+            P.append((_Poly([(-A - 30, -B - 10), (A + 30, -B - 10)] + front[::-1]), "fabric_dk"))
         P.append((_rr(-A + 30, -B + 70, A - 30, B - 30, 40), "linen"))
         P.append((_rr(-A + 30, -B + 600, A - 30, B - 30, 40), "cushion"))
         P.append((_rr(-A + 30, -B + 600, A - 30, -B + 700, 30), "linen"))
@@ -119,11 +124,19 @@ def furniture_parts(f):
             a0 = s * 25 if s > 0 else -A + 110
             a1 = A - 110 if s > 0 else -25
             P.append((_rr(a0, -B + 110, a1, -B + 470, 80), "linen"))
-        P.append((_rr(-A, -B, A, -B + 60, 20), "wood"))
+        if f.get("headboard") != "curved":
+            P.append((_rr(-A, -B, A, -B + 60, 20), "wood"))
     elif k == "bedside":
         P.append((_rr(-A, -B, A, B, 30), "wood_lt"))
-        P.append((_circ(0, -B * 0.1, min(A, B) * 0.42), "cushion"))
-        P.append((_circ(0, -B * 0.1, min(A, B) * 0.12), "metal"))
+        if f.get("lamp"):
+            P.append((_circ(0, -B * 0.1, min(A, B) * 0.42), "cushion"))
+            P.append((_circ(0, -B * 0.1, min(A, B) * 0.12), "metal"))
+    elif k == "bench":
+        P.append((_rr(-A, -B, A, B, 50), "fabric_dk"))
+        n = 2 if w > 900 else 1
+        for i in range(n):
+            a0 = -A + 25 + i * (2 * A - 50) / n
+            P.append((_rr(a0 + 8, -B + 25, a0 + (2 * A - 50) / n - 8, B - 25, 45), "fabric"))
     elif k == "rug":
         P.append((_rr(-A, -B, A, B, 10), "rug"))
         P.append((_rr(-A + 110, -B + 110, A - 110, B - 110, 6), "rug_line"))
@@ -140,6 +153,13 @@ def furniture_parts(f):
         P.append((_rr(-A, -B, A, B, 5), "ink"))
     else:
         P.append((_rr(-A, -B, A, B, 30), "fabric"))
+    fin = f.get("finish")                                   # look-defining options (agents/designer.md)
+    if fin == "velvet":                                     # a velvet bed: frame and headboard, not the bedding
+        swap = {"wood": "velvet_dk", "fabric_dk": "velvet_dk"} if k == "bed" else \
+            {"fabric": "velvet", "fabric_dk": "velvet_dk", "cushion": "velvet"}
+        P = [(g, swap.get(r, r)) for g, r in P]
+    elif fin == "marble":
+        P = [(g, "marble" if r in ("wood_lt", "wood") else r) for g, r in P]
     return P
 
 

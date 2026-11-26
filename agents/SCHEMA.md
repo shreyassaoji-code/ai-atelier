@@ -59,24 +59,44 @@ projects/<name>/design.json    proposed interior (designer, services, …)
 | `ceilings[].lights[]` | object | design fittings (downlights are placed by rule, STANDARDS §6): `kind`, `at` (pendant, chandelier, spotlight) or `path` (track, strip), `note` |
 | `wall_features[]` | object | `id`, `room`, `wall`, `offset`, `width`, `z0`, `z1`, `kind`, `finish` |
 | `floors[]` | object | `room`, `finish`, `pattern`, `module` `[w, l]` (plank or tile; mm), `start`, `skirting` (height), `angle` (optional, degrees anticlockwise from east; planks run along it) |
-| `finishes[]` | object | `code` (`FL-n` floors, `WFn` walls, `MBn` joinery boards, `WTn` worktops), `kind`, `name`, `maker`, `ref` (catalogue code). No colour values: material tones are mixed from `atelier/theme.py` tokens by `atelier/texture.py`. |
+| `finishes[]` | object | `code` (`FL-n` floors, `WFn` walls, `MBn` / `MB-n` joinery boards, `WTn` / `WT-n` worktops, `HW-n` hardware), `kind`, `name`, `maker`, `ref` (catalogue code), optional `tone` (a colour NAME, §2b). No colour values: material tones are mixed from `atelier/theme.py` tokens by `atelier/texture.py`. |
 | `views[]` | object | `id`, `kind`, `room` (optional), `wall` (elevations), `scale` (e.g. 25 for 1:25), `title`; sections also `line` `[[x, y], [x, y]]` (cut line) and `look` (`N` `E` `S` `W`: direction the viewer looks); elevations `room` + `wall` (the face of that wall in that room); room boards `room` + optional `walls` `[id, id]` (the two key elevations; omit to let STANDARDS RB2a.4 choose) |
 | `cameras[]` | object | `id`, `room`, `eye` `[x,y,z]`, `target` `[x,y,z]`, `lens` (mm, 35 mm equivalent). Room boards use up to three per room before the corner rule (STANDARDS RB2a.6); give `target` z = `eye` z for a level view. |
 | `notes[]` | object | `id`, `applies` (`"all"`, room id or view id), `text` |
 
 **Merge** (`atelier/model.py`): survey walls − `demolish` + `new_walls`; survey openings − openings on removed wall parts − demolished openings + `new_openings`; survey rooms updated or extended by design `rooms`.
 
+## 2b. Designer vocabulary (agents/designer.md)
+
+Designers may write a design in the brief's words; `atelier/vocab.py` turns it into §2 on load, so both forms draw the same.
+
+| Brief key | Meaning | Becomes (§2) |
+|---|---|---|
+| `ceilings[]` `type: "tray"` | `steps[]` `{band, z}` (or `h`) from the perimeter inward, then `core_h`; optional `area` (partial tray polygon), `features[]` `{kind: "dome", at, d, z}`, `tracks[]` (paths) | `z` = first level; one step per further level, `inset` = running band (or `poly` = `area` inset by it); `light: "cove"` unless given; `domes[]`; `lights[]` kind `track` |
+| `ceilings[]` `type: "flat"` | `z` (or `h`), optional `tracks[]` | `z`, `lights[]` |
+| `opening_overrides[]` | `{id, …fields}` | the existing opening's fields are replaced (after demolition) |
+| `floors[]` `{room, material}` + `floor_materials[]` `{code, name, pattern (tile / planks / herringbone …), module, colour}` | | `floors[]` `{room, finish, pattern, module}`, `finishes[]` with `tone` |
+| `wall_finishes` `{room: code}` or `[{room, code}]` + `finish_materials[]`, `feature_materials[]` `{code, kind, name, colour}` | | `rooms[].wall_finish`, `finishes[]` with `tone` |
+| `joinery[].materials` `{role: code}` or `[codes]`; `parts[]` `{name, code, size, qty}`; `notes[]` | codes `MB-n` boards, `WT-n` worktops, `HW-n` hardware, all in the material lists | `finish` = `shutter` / `front` / first `MB`; parts and notes print on the JN board |
+| `furniture[].kind` `nightstand`, `bench` (`bed_bench`, `ottoman`) | options `headboard: "curved"` (beds), `finish: "velvet" \| "marble"`, `lamp: true` (nightstands; no lamp otherwise) | `bedside`, `bench`; options drawn on plans, elevations and renders |
+| `views[]` `{room, wall}` (no kind) | the camera wall of a room board | `{kind: "room_board", room, walls: [wall]}`; the second wall by rule |
+| `palette[]`, `style`, `summary`, `concept` | named colours (4–6), style line, ≤ 60 words, concept name | kept on the model; printed on the cover |
+| `switch_spots[]` `{room, at, z?}` | switch positions in open rooms | switchboards there (rule `design`), replacing the rule's in that room |
+| `notes[]` as strings | | `{id: Nn, applies: "all", text}` |
+
+**Colours are names, never values** (`CLAUDE.md`): "warm oak", "deep olive", "bone", "smoked bronze". `texture.named_tone` mixes them from `theme.py` tokens (base words: white/ivory/bone, cream/linen, beige/sand/stone, marble, grey/ash, charcoal/black, oak/honey, walnut/smoked, brass/bronze/gold, terracotta/rust, sage/olive/green, blue/navy/slate, blush/rose; modifiers light/pale, dark/deep, warm, cool, muted). A name with no known word draws in its kind's tone and raises `W-TONE`.
+
 ## 3. Enums (complete lists)
 
 | Field | Values |
 |---|---|
-| `wall.kind` | `external` `internal` `partition` `parapet` `glass` `half` |
+| `wall.kind` | `external` `internal` `load` (load-bearing internal: never demolished) `partition` `parapet` `glass` `half` |
 | `wall.align` | `centre` `left` `right` |
 | `opening.kind` | `door` `double_door` `sliding_door` `opening` `window` `ventilator` |
 | `opening.swing` | `left` `right` `none` (sliding doors, openings, windows) |
 | `opening.hinge` | `start` `end` `both` (double doors) `none` |
 | `room.type` | `living` `dining` `living_dining` `kitchen` `bedroom` `master_bedroom` `bath` `toilet` `utility` `balcony` `foyer` `passage` `study` `puja` `store` `dress` `shaft` |
-| `furniture.kind` | `sofa` `armchair` `coffee_table` `side_table` `dining_table` `chair` `bed` `bedside` `desk` `rug` `console` `tv` `plant` `other` |
+| `furniture.kind` | `sofa` `armchair` `coffee_table` `side_table` `dining_table` `chair` `bed` `bedside` `bench` `desk` `rug` `console` `tv` `plant` `other` |
 | `sanitary.kind` | `wc` `shower` `bathtub` `washing_machine` |
 | `joinery.kind` | `wardrobe` `tv_unit` `kitchen_base` `kitchen_wall` `tall_unit` `vanity` `shoe_rack` `crockery` `study_unit` `bookshelf` `puja_unit` `other` |
 | `module.type` | `shutter` `glass_shutter` `drawer` `open` `loft` `appliance` `sink` `hob` `panel` `filler` |

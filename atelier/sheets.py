@@ -554,11 +554,35 @@ def cover(m, no, total):
             ("Rooms", str(len(m.rooms))), ("Carpet area", f"{carpet:.2f} m²"),
             ("Built-up area", f"{built:.2f} m² (outer faces)"), ("Sheets", str(total)),
             ("Data", " + ".join(m.sources))]
+    ex = getattr(m, "extras", {}) or {}
+    concept = ex.get("concept") or (ex.get("concept_name"))
+    if ex.get("style"):
+        rows.insert(0, ("Style", ex["style"]))
+    if concept:
+        rows.insert(0, ("Concept", concept))
     y = y0 + 60
     for k_, v in rows:
         sh.caps(x0, y, k_, T.GREY)
         sh.text(x0 + 30, y, v, sans("legend"), T.INK)
         y += 6
+    if ex.get("summary"):                                   # designer's summary (≤ 60 words)
+        from atelier.sheets_ceiling import _wrap
+        y += 3
+        for ln in _wrap(ex["summary"], 62)[:6]:
+            sh.text(x0, y, ln, serif("legend", 400), T.INK)
+            y += 4.6
+    if ex.get("palette"):                                   # named tones, mixed from theme tokens
+        from atelier.texture import named_tone
+        y += 4
+        sh.caps(x0, y, "Palette", T.GREY)
+        y += 5
+        for i, t in enumerate(ex["palette"][:6]):
+            name = t.get("name") if isinstance(t, dict) else t
+            tone = named_tone(name)
+            cx_ = x0 + 6 + i * 17
+            sh.circle(cx_, y + 4, 5, edge=T.INK, fill=TX.hexc(tone) if tone is not None else T.PAPER, lw=LW_THIN, z=5)
+            for k_, ln in enumerate(_wrap_words(name, 12)[:2]):
+                sh.text(cx_, y + 12.5 + k_ * 2.6, ln, sans("dim"), T.GREY, ha="center")
     # key plan
     scale = 75
     cx = (x0 + 110 + x1) / 2
@@ -574,6 +598,17 @@ def cover(m, no, total):
     fr.lines([("", "Drawn by the AI Atelier engine from survey and design data. Values marked * were not "
                "read from the plan and must be verified on site.", None)], color=T.INK)
     return sh
+
+
+def _wrap_words(text, n):
+    out, cur = [], ""
+    for w_ in str(text).split():
+        if cur and len(cur) + 1 + len(w_) > n:
+            out.append(cur)
+            cur = w_
+        else:
+            cur = (cur + " " + w_).strip()
+    return out + ([cur] if cur else [])
 
 
 def _table(sh, x, y, cols, header, rows, row_h=4.6):
