@@ -18,6 +18,7 @@ from atelier.draw import (DASH, LW_HAIR, LW_LINE, LW_THIN, PlanView, Sheet, enve
 from atelier.symbols import north_arrow, number_tag, scale_bar
 
 DISCLAIMER = "Drafted with AI - not for construction until checked and signed"
+FLAG_KEY = "* assumed, not read from the plan: verify on site (list on the measured drawing)"
 SCALES = (20, 25, 50, 75, 100, 200)
 DIM_MARGIN = 30          # page mm kept clear round the plan for dimension chains
 LINE = 3.6               # strip line pitch (mm)
@@ -69,7 +70,7 @@ class Frame:
         # disclaimer band
         sh.rule(x0, T.RIGHT, y1 + 5)
         sh.text(x0, y1 + 11, DISCLAIMER, sans("legend", 600), T.FLAG)
-        sh.text(T.RIGHT, y1 + 11, "All dimensions in mm", sans("legend"), T.GREY, ha="right")
+        sh.text(T.RIGHT, y1 + 11, f"{FLAG_KEY}  ·  All dimensions in mm", sans("legend"), T.GREY, ha="right")
 
     # ---- strip helpers
     def rule(self):

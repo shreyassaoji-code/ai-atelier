@@ -167,6 +167,10 @@ def elevation_views(m):
     remaining wall face of every room. Faces longer than MAX_PART become parts -p1, -p2 … with match lines."""
     data = [v for v in m.views if v.get("kind") == "elevation"]
     used = {(v["room"], v["wall"]) for v in data}
+    try:
+        carried = {(i["room"], i["wall"]) for i in load_services(m) if i.get("wall") and i.get("z") is not None}
+    except FileNotFoundError:
+        carried = set()
     out = []
     for r in m.rooms:
         seen = set()
@@ -174,8 +178,8 @@ def elevation_views(m):
             if f.wall in seen:
                 continue
             best = max((x for x in geom.room_faces(r, m.walls) if x.wall == f.wall), key=lambda x: x.length)
-            if best.length < MIN_FACE:
-                continue
+            if best.length < MIN_FACE and (r["id"], f.wall) not in carried:
+                continue                               # a sliver, unless a wall point sits on it
             seen.add(f.wall)
             v = next((d for d in data if d["room"] == r["id"] and d["wall"] == f.wall), None) or \
                 {"id": f"E-{r['id']}-{f.wall}", "kind": "elevation", "room": r["id"], "wall": f.wall, "scale": 25,
