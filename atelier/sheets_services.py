@@ -37,6 +37,8 @@ NAMES = {
 
 
 def load_services(m):
+    if getattr(m, "services_items", None) is not None:      # preview: computed in memory for that design
+        return m.services_items
     p = m.root / "services.json"
     if not p.exists():
         raise FileNotFoundError(f"{p} missing: run  python -m atelier.services {m.root}")
